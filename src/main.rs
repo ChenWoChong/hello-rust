@@ -1,3 +1,6 @@
+mod garden;
+mod pool;
+
 const PI: f64 = 3.1415629;
 const MAX_USERS: usize = 1000;
 const URL: &str = "www.baidu.com";
@@ -129,12 +132,16 @@ fn main() {
 
     let mut scores = HashMap::new();
     scores.insert(String::from("hello"), 1);
-    scores.insert(String::from("hello"), 12);
+    scores.insert(String::from("hello1"), 12);
     let x = (12, String::from("hh"), 10u8);
     println!("{}, {}, {}", x.0, x.1, x.2);
 
     let v4 = IPADDRKIND::V4;
     let v6 = IPADDRKIND::V6;
+
+    if 3 >= 5 {
+        println!("3");
+    }
 
     let mut t = Default::default();
     let num = 10;
@@ -165,10 +172,65 @@ fn main() {
     while let Some(top) = stack.pop() {
         println!("stack pop: {}", top); // 输出 3、2、1
     }
-    
+
     let mut n = 3;
     while n != 0 {
-        n -=1;
+        n -= 1;
+    }
+
+    for n in 1..4 {
+        println!("{n}")
+    }
+    println!();
+
+    for n in 1..=4 {
+        println!("{n}");
+    }
+
+    println!();
+    for n in (1..4).rev() {
+        println!("{n}");
+    }
+
+    println!();
+    for n in (1..=4).rev() {
+        println!("{n}");
+    }
+    println!();
+    for ch in ('a'..='z').rev() {
+        println!("{ch}");
+    }
+    fn ao(x: u32) -> u32 {
+        x + 1
+    }
+
+    let ao1 = |x: u32| -> u32 { x + 1 };
+    let ao2 = |x: u32| x + 1;
+    let ao3 = |x: u32| x + 1;
+
+    let a = 10u32; // 局部变量 
+    let add_v2 = |x: u32| -> u32 { x + a }; // 定义一个闭包 
+    let result2 = add_v2(20); // 调用闭包 
+    println!("{}", result2);
+}
+
+fn foo() -> u32 {
+    10u32
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::foo;
+    #[test]
+    fn it_works() {
+        let res = foo();
+        assert_eq!(res, 10u32);
+    }
+
+    #[test]
+    fn it_not_works() {
+        let res = foo();
+        assert_ne!(res, 11u32);
     }
 }
 
