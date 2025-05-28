@@ -13,6 +13,7 @@ pub struct Triangle {
     pub c: f64,
 }
 
+#[allow(dead_code)]
 pub enum Shape {
     Rectangle(Rectangle),
     Circle(Circle),
