@@ -1,4 +1,5 @@
 mod shape;
+mod leetcode;
 
 fn main() {
     let rec = shape::base::Rectangle { a: 1.0, b: 2.0 };
