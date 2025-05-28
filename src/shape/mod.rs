@@ -2,12 +2,12 @@ pub mod base;
 use base::*;
 
 pub trait Shaper {
-    fn zhou_change(&self) -> f64;
+    fn circumference(&self) -> f64;
     fn area(&self) -> f64;
 }
 
 impl Shaper for Rectangle {
-    fn zhou_change(&self) -> f64 {
+    fn circumference(&self) -> f64 {
         (self.a + self.b) * 2.0
     }
     fn area(&self) -> f64 {
@@ -16,7 +16,7 @@ impl Shaper for Rectangle {
 }
 
 impl Shaper for Circle {
-    fn zhou_change(&self) -> f64 {
+    fn circumference(&self) -> f64 {
         self.r * 2.0 * 3.14
     }
     fn area(&self) -> f64 {
@@ -25,16 +25,16 @@ impl Shaper for Circle {
 }
 
 impl Shaper for Triangle {
-    fn zhou_change(&self) -> f64 {
-        self.a+self.b+self.c
+    fn circumference(&self) -> f64 {
+        self.a + self.b + self.c
     }
     fn area(&self) -> f64 {
-        self.a*self.b*self.c
+        self.a * self.b * self.c
     }
 }
 
-pub fn echo_zhou_change<T: Shaper>(a: &T) {
-    println!("ZhouChange is {}", a.zhou_change());
+pub fn echo_circumference<T: Shaper>(a: &T) {
+    println!("ZhouChange is {}", a.circumference());
 }
 
 pub fn echo_area<T: Shaper>(a: &T) {
