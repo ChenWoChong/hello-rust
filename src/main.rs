@@ -1,5 +1,5 @@
-mod garden;
 mod pool;
+mod utils;
 
 const PI: f64 = 3.1415629;
 const MAX_USERS: usize = 1000;
@@ -212,7 +212,18 @@ fn main() {
     let add_v2 = |x: u32| -> u32 { x + a }; // 定义一个闭包 
     let result2 = add_v2(20); // 调用闭包 
     println!("{}", result2);
+
+    use utils::add;
+    let c = add(3, 4);
+    println!("c is {c}");
+
+    pool::user::user();
+
+    garden::gar();
+    garden::vegetables::hello();
 }
+
+mod garden;
 
 fn foo() -> u32 {
     10u32
