@@ -1,3 +1,4 @@
+mod func;
 mod leetcode;
 mod shape;
 
@@ -37,4 +38,24 @@ fn main() {
     }
 
     println!("{:?}", strs);
+
+    println!("square {}", func::apply(6, func::square));
+    println!("cube {}", func::apply(6, func::cube));
+
+    let is_pi = pi();
+    let is_unit1 = not_pi();
+    let is_unit2 = {
+        pi();
+    };
+    println!(
+        "is_pi: {:?}, is_unit1: {:?}, is_unit2: {:?}",
+        is_pi, is_unit1, is_unit2
+    );
+}
+
+fn pi() -> f64 {
+    3.1415926
+}
+fn not_pi() {
+    3.1415926;
 }
