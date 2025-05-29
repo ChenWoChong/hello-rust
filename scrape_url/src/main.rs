@@ -1,6 +1,10 @@
 use std::fs;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    for arg in std::env::args() {
+        println!("args {}", arg);
+    }
     let url = "https://www.rust-lang.org/";
+    let url = std::env::args().nth(1).expect("this need a url");
     let output = "rust.md";
 
     println!("Fetching url : {}", url);
