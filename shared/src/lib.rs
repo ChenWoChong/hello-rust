@@ -5,7 +5,7 @@ pub fn add(left: u64, right: u64) -> u64 {
 }
 
 pub fn echo() {
-    println!("Hello from share lib");
+    println!("Hello from shared lib");
 }
 
 #[cfg(test)]

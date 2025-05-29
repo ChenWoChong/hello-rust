@@ -1,7 +1,7 @@
-use share::utils;
+use shared::utils;
 
 fn main() {
     println!("Hello, world!");
     utils::echo_utils();
-    share::echo();
+    shared::echo();
 }
