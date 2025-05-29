@@ -2,6 +2,7 @@ mod func;
 mod leetcode;
 mod shape;
 mod chatroom;
+mod fib;
 
 use std::any::type_name;
 

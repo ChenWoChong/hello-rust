@@ -59,5 +59,21 @@ pub fn chat() {
     );
 }
 
+#[allow(dead_code)]
+fn process_event(event: &Event) {
+    match event {
+        Event::Join((uid, _tid)) => println!("user {:?} joined", uid),
+        Event::Leave((uid, tid)) => println!("user {:?}, left {:?}", uid, tid),
+        Event::Message((_, _, msg)) => println!("broadcast: {}", msg),
+    }
+}
+
+#[allow(dead_code)]
+fn process_msg(event: Event) {
+    if let Event::Message((_, _, msg)) = event {
+        println!("broadcast: {}", msg)
+    }
+}
+
 #[cfg(test)]
 mod test {}
