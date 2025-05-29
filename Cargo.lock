@@ -3,5 +3,20 @@
 version = 4
 
 [[package]]
+name = "app"
+version = "0.1.0"
+dependencies = [
+ "share",
+]
+
+[[package]]
 name = "hello-rust"
+version = "0.1.0"
+
+[[package]]
+name = "scrape_url"
+version = "0.1.0"
+
+[[package]]
+name = "share"
 version = "0.1.0"
