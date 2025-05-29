@@ -1,5 +1,11 @@
-mod shape;
 mod leetcode;
+mod shape;
+
+use std::any::type_name;
+
+fn print_type_of<T>(_: &T) {
+    println!("Type name is {}", type_name::<T>());
+}
 
 fn main() {
     let rec = shape::base::Rectangle { a: 1.0, b: 2.0 };
@@ -17,4 +23,18 @@ fn main() {
     };
     shape::echo_circumference(&triangle);
     shape::echo_area(&triangle);
+
+    let a = String::from("Gate");
+    print_type_of(&a);
+
+    let mut strs = vec!["aa".to_string(), "bb".to_string(), "cc".to_string()];
+    for n in strs.iter_mut() {
+        n.insert(1, 'z');
+    }
+
+    for n in &strs {
+        println!("{n}");
+    }
+
+    println!("{:?}", strs);
 }
