@@ -1,6 +1,7 @@
 mod func;
 mod leetcode;
 mod shape;
+mod chatroom;
 
 use std::any::type_name;
 
@@ -51,6 +52,8 @@ fn main() {
         "is_pi: {:?}, is_unit1: {:?}, is_unit2: {:?}",
         is_pi, is_unit1, is_unit2
     );
+
+    chatroom::chat();
 }
 
 fn pi() -> f64 {
