@@ -1,13 +1,19 @@
 use std::fs;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    for arg in std::env::args() {
-        println!("args {}", arg);
+    let args = std::env::args().collect::<Vec<String>>();
+    let mut url = "https://www.rust-lang.org/";
+    let mut output = "rust.md";
+    if args.len() < 3 {
+        panic!("args is len than 3, Run: scrape_url url outputName");
     }
-    let url = "https://www.rust-lang.org/";
-    let url = std::env::args().nth(1).expect("this need a url");
-    let output = "rust.md";
 
-    println!("Fetching url : {}", url);
+    if let [_cmd, u, o, ..] = args.as_slice() {
+        (url, output) = (u, o);
+        println!("Fetching url: {}, Output: {}", url, output);
+    } else {
+        eprintln!("args is short");
+    }
+
     let body = reqwest::blocking::get(url)?.text()?;
 
     println!("Coverting html to markdown...");
