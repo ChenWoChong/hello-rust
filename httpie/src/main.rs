@@ -1,7 +1,7 @@
 use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
-use reqwest::Url;
-use std::str::FromStr;
+use reqwest::{Client, Response, Url, header};
+use std::{collections::HashMap, str::FromStr};
 
 #[derive(Parser, Debug)]
 #[command(version = "1.0.0", author = "chenwochong")]
@@ -67,7 +67,30 @@ fn parse_kv_pair(s: &str) -> Result<KvPair> {
     Ok(s.parse()?)
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<()> {
     let opt = Opts::parse();
     println!("Hello, world! {:?}", opt);
+    let client = Client::new();
+    let result = match opt.subcmd {
+        SubCommand::Get(ref args) => get(client, args).await?,
+        SubCommand::Post(ref args) => post(client, args).await?,
+    };
+    Ok(result)
+}
+
+async fn get(client: Client, args: &Get) -> Result<()> {
+    let resp = client.get(&args.url).send().await?;
+    println!("get resp {:?}", resp.text().await?);
+    Ok(())
+}
+
+async fn post(client: Client, args: &Post) -> Result<()> {
+    let mut body = HashMap::new();
+    for pair in args.body.iter() {
+        body.insert(&pair.k, &pair.v);
+    }
+    let resp = client.post(&args.url).json(&body).send().await?;
+    print!("post resp: {:?}", resp.text().await?);
+    Ok(())
 }
