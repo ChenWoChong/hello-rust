@@ -1,10 +1,12 @@
 use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
+use colored::Colorize;
+use mime::{APPLICATION_JSON, Mime};
 use reqwest::{Client, Response, Url, header};
 use std::{collections::HashMap, str::FromStr};
 
 #[derive(Parser, Debug)]
-#[command(version = "1.0.0", author = "chenwochong")]
+#[command(version = "1.0.0", author = "ChenWoChong")]
 struct Opts {
     #[command(subcommand)]
     subcmd: SubCommand,
@@ -55,10 +57,10 @@ impl FromStr for KvPair {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut split = s.split("=");
-        let err = || anyhow!(format!("Failed to parse {}", s));
+        let err = || anyhow!(format!("Failed to parse {}", s.red()));
         Ok(Self {
-            k: (split.next().ok_or_else(err)?).to_string(),
-            v: (split.next().ok_or_else(err)?).to_string(),
+            k: split.next().ok_or_else(err)?.to_string(),
+            v: split.next().ok_or_else(err)?.to_string(),
         })
     }
 }
@@ -67,22 +69,45 @@ fn parse_kv_pair(s: &str) -> Result<KvPair> {
     Ok(s.parse()?)
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let opt = Opts::parse();
-    println!("Hello, world! {:?}", opt);
-    let client = Client::new();
-    let result = match opt.subcmd {
-        SubCommand::Get(ref args) => get(client, args).await?,
-        SubCommand::Post(ref args) => post(client, args).await?,
-    };
-    Ok(result)
+fn print_status(resp: &Response) {
+    let status = format!("{:?} {}", resp.version(), resp.status()).blue();
+    println!("{}\n", status)
+}
+
+fn print_headers(resp: &Response) {
+    for (name, value) in resp.headers() {
+        println!("{}: {:?}", name.to_string().green(), value);
+    }
+    println!();
+}
+
+fn get_content_type(resp: &Response) -> Option<Mime> {
+    resp.headers()
+        .get(header::CONTENT_TYPE)
+        .map(|v| v.to_str().unwrap().parse().unwrap())
+}
+
+fn print_body(m: Option<Mime>, body: &String) {
+    match m {
+        Some(v) if v == APPLICATION_JSON => {
+            println!("{}", jsonxf::pretty_print(body).unwrap().cyan());
+        }
+        _ => {
+            println!("{}", body)
+        }
+    }
+}
+
+async fn print_resp(resp: Response) -> Result<()> {
+    print_status(&resp);
+    print_headers(&resp);
+    print_body(get_content_type(&resp), &resp.text().await?);
+    Ok(())
 }
 
 async fn get(client: Client, args: &Get) -> Result<()> {
     let resp = client.get(&args.url).send().await?;
-    println!("get resp {:?}", resp.text().await?);
-    Ok(())
+    Ok(print_resp(resp).await?)
 }
 
 async fn post(client: Client, args: &Post) -> Result<()> {
@@ -91,6 +116,21 @@ async fn post(client: Client, args: &Post) -> Result<()> {
         body.insert(&pair.k, &pair.v);
     }
     let resp = client.post(&args.url).json(&body).send().await?;
-    print!("post resp: {:?}", resp.text().await?);
-    Ok(())
+    Ok(print_resp(resp).await?)
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let opt = Opts::parse();
+    println!("Hello, world! {:?}", opt);
+
+    let mut headers = header::HeaderMap::new();
+    headers.insert("X-POWERED-BY", "Rust".parse()?);
+    headers.insert(header::USER_AGENT, "Rust Httpie".parse()?);
+    let client = Client::builder().default_headers(headers).build()?;
+    let result = match opt.subcmd {
+        SubCommand::Get(ref args) => get(client, args).await?,
+        SubCommand::Post(ref args) => post(client, args).await?,
+    };
+    Ok(result)
 }
