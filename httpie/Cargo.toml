@@ -5,7 +5,8 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
-clap = { version = "4.5.39", features = ["color", "derive"] }
+clap = { version = "4.5.39", features = ["color", "derive", "cargo"] }
+clap-cargo = "0.15.2"
 colored = "3.0.0"
 jsonxf = "1.1.1"
 mime = "0.3.17"
