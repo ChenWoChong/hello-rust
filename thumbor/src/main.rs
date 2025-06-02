@@ -75,11 +75,11 @@ async fn generate(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     engine.apply(&spec.specs);
 
-    let image = engine.generate(ImageFormat::Jpeg);
+    let image = engine.generate(ImageFormat::Png);
     info!("Finished processing: image size {}", image.len());
 
     let mut headers = HeaderMap::new();
-    headers.insert("content-type", HeaderValue::from_static("image/jpeg"));
+    headers.insert("content-type", HeaderValue::from_static("image/png"));
     Ok((headers, image))
 }
 

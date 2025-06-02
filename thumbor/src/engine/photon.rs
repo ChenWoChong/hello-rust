@@ -5,10 +5,10 @@ use bytes::Bytes;
 use image::{DynamicImage, ImageBuffer, ImageFormat};
 use lazy_static::lazy_static;
 use photon_rs::filters::filter;
-use photon_rs::native::{image_to_bytes, open_image_from_bytes};
+use photon_rs::native::open_image_from_bytes;
 use photon_rs::{PhotonImage, effects, multiple, transform};
 use std::convert::TryFrom;
-use std::io::{Cursor, Seek};
+use std::io::Cursor;
 
 lazy_static! {
     static ref WATERMARK: PhotonImage = {
@@ -44,8 +44,8 @@ impl Engine for Photon {
         }
     }
 
-    fn generate(self, _format: ImageFormat) -> Vec<u8> {
-        image_to_bytes(self.0)
+    fn generate(self, format: ImageFormat) -> Vec<u8> {
+        image_to_buf(self.0, format)
     }
 }
 
@@ -76,10 +76,9 @@ impl SpecTransform<&FlipH> for Photon {
 
 impl SpecTransform<&Filter> for Photon {
     fn transform(&mut self, op: &Filter) {
-        match filter::Filter::from_i32(op.filter) {
-            Some(filter::Filter::Unspecified) => {}
-            Some(f) => filter(&mut self.0, f.to_str().unwrap()),
-            _ => {}
+        match filter::Filter::try_from(op.filter) {
+            Ok(f) => filter(&mut self.0, f.to_str().unwrap()),
+            Err(_) => {}
         }
     }
 }
