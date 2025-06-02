@@ -1,14 +1,16 @@
+mod engine;
 mod pb;
+use engine::{Engine, Photon};
 
 use axum::extract::Path;
-use axum::handler::HandlerWithoutStateExt;
-use axum::http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
+use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::routing::get;
 use axum::{Extension, Router};
 use bytes::Bytes;
+use image::ImageFormat;
 use lru::LruCache;
 use pb::*;
-use percent_encoding::{NON_ALPHANUMERIC, percent_decode, percent_decode_str, percent_encode};
+use percent_encoding::{NON_ALPHANUMERIC, percent_decode_str, percent_encode};
 use serde::Deserialize;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::num::NonZeroUsize;
@@ -66,11 +68,19 @@ async fn generate(
         .await
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    // TODO: handle image
+    info!("spec {:#?}", spec);
+
+    let mut engine: Photon = data
+        .try_into()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    engine.apply(&spec.specs);
+
+    let image = engine.generate(ImageFormat::Jpeg);
+    info!("Finished processing: image size {}", image.len());
 
     let mut headers = HeaderMap::new();
     headers.insert("content-type", HeaderValue::from_static("image/jpeg"));
-    Ok((headers, data.to_vec()))
+    Ok((headers, image))
 }
 
 #[instrument(level = "info", skip(cache))]

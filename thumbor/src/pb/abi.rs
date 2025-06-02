@@ -169,10 +169,10 @@ pub mod filter {
 }
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct Watermark {
-    #[prost(uint32, tag = "1")]
-    pub x: u32,
-    #[prost(uint32, tag = "2")]
-    pub y: u32,
+    #[prost(int64, tag = "1")]
+    pub x: i64,
+    #[prost(int64, tag = "2")]
+    pub y: i64,
 }
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct Spec {
