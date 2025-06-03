@@ -91,6 +91,12 @@ impl Spec {
             data: Some(spec::Data::Watermark(Watermark { x, y })),
         }
     }
+
+    pub fn new_flip_v() -> Self {
+        Self {
+            data: Some(spec::Data::FlipV(FlipV {})),
+        }
+    }
 }
 
 #[cfg(test)]
