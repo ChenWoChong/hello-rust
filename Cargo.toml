@@ -6,4 +6,4 @@ edition = "2024"
 [dependencies]
 
 [workspace]
-members = ["app", "httpie", "scrape_url", "shared", "thumbor"]
+members = ["app", "httpie", "queryer", "scrape_url", "shared", "thumbor"]
