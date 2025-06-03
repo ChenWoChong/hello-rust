@@ -1,4 +1,7 @@
+mod image_engine;
 mod photon;
+
+pub use image_engine::ImageEngine;
 pub use photon::Photon;
 
 use crate::pb::Spec;

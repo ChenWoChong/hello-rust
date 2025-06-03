@@ -1,6 +1,6 @@
 mod engine;
 mod pb;
-use engine::{Engine, Photon};
+use engine::{Engine, ImageEngine};
 
 use axum::extract::Path;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
@@ -70,7 +70,7 @@ async fn generate(
 
     info!("spec {:#?}", spec);
 
-    let mut engine: Photon = data
+    let mut engine: ImageEngine = data
         .try_into()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     engine.apply(&spec.specs);
