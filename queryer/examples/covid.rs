@@ -20,16 +20,16 @@ async fn main() -> Result<()> {
     let df = CsvReader::new(Cursor::new(data))
         .infer_schema(Some(16))
         .finish()?;
-    let filtered = df.filter(&df.column("new_deaths")?.gt(500)?)?;
-    println!(
-        "{:?}",
-        filtered.select([
-            "location",
-            "total_cases",
-            "new_cases",
-            "total_deaths",
-            "new_deaths"
-        ])
-    );
+    // let filtered = df.filter(&df.column("new_deaths")?.gt(500)?)?;
+    // println!(
+    //     "{:?}",
+    //     filtered.select([
+    //         "location",
+    //         "total_cases",
+    //         "new_cases",
+    //         "total_deaths",
+    //         "new_deaths"
+    //     ])
+    // );
     Ok(())
 }
