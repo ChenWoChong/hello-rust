@@ -1,5 +1,6 @@
 mod convert;
 mod dialect;
+mod fetcher;
 
 pub use dialect::TyrDialect;
 
