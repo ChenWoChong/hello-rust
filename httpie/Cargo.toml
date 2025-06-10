@@ -3,6 +3,13 @@ name = "httpie"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "httpie"
+
+[[bin]]
+name = "httpie"
+
+
 [dependencies]
 anyhow = "1.0.98"
 clap = { version = "4.5.39", features = ["color", "derive", "cargo"] }
