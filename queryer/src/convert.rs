@@ -220,7 +220,7 @@ mod tests {
 
     #[test]
     fn parse_sql_works() {
-        let url = "http://abc.xyz/abc?a=1&b=2";
+        let url = "https://abc.xyz/abc?a=1&b=2";
         let sql = format!(
             "select a,b,c from {} where a=1 order by c desc limit 5 offset 10",
             url
