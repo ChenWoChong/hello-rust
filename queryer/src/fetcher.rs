@@ -27,15 +27,20 @@ impl<'a> Fetch for UrlFetcher<'a> {
     type Error = anyhow::Error;
 
     async fn fetch(&self) -> Result<String, Self::Error> {
-        // let client = reqwest::Client::new();
-        // 使用默认客户端，不配置代理
-        let client = reqwest::Client::builder()
-            .proxy(reqwest::Proxy::http("http://127.0.0.1:7890").expect("Failed to set HTTP proxy"))
-            .proxy(reqwest::Proxy::https("http://127.0.0.1:7890").expect("Failed to set HTTPS proxy"))
-            .build()
-            .expect("Failed to build client");
-        
-        let res = client.get(self.0).send().await?.text().await?;
+        tracing::info!("Fetching data from URL: {}", self.0);
+
+        let client = reqwest::Client::new();
+
+        // 使用代理
+        // let client = reqwest::Client::builder()
+        //     .proxy(reqwest::Proxy::all("http://127.0.0.1:7890")?)
+        //     .timeout(std::time::Duration::from_secs(30))
+        //     .build()?;
+
+        let response = client.get(self.0).send().await?;
+        tracing::info!("Response status: {}", response.status());
+
+        let res = response.text().await?;
         Ok(res)
     }
 }
