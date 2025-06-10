@@ -1,5 +1,7 @@
-mod dialect;
 mod convert;
+mod dialect;
+
+pub use dialect::TyrDialect;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right

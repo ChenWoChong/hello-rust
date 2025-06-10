@@ -213,4 +213,25 @@ impl TryFrom<Value> for LiteralValue {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+    use crate::TyrDialect;
+    use sqlparser::parser::Parser;
+
+    #[test]
+    fn parse_sql_works() {
+        let url = "http://abc.xyz/abc?a=1&b=2";
+        let sql = format!(
+            "select a,b,c from {} where a=1 order by c desc limit 5 offset 10",
+            url
+        );
+        
+        let statement = &Parser::parse_sql(&TyrDialect::default(), sql.as_ref()).unwrap()[0];
+        let sql: Sql = statement.try_into().unwrap();
+        assert_eq!(sql.source, url);
+        assert_eq!(sql.limit, Some(5));
+        assert_eq!(sql.offset, Some(10));
+        assert_eq!(sql.order_by, vec![("c".into(), true)]);
+        assert_eq!(sql.selection, vec![col("a"), col("b"), col("c")]);
+    }
+}
