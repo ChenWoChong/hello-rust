@@ -12,7 +12,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.98"
 async-trait = "0.1.88"
-polars = { version = "0.15", features = ["json", "lazy"] }
+polars = { version = "0.33.2", features = ["json", "lazy"] }
 reqwest = { version = "0.12.19", features = ["rustls-tls"], default-features = false }
 sqlparser = "0.10.0"
 tokio = { version = "1.45.1", features = ["full"] }

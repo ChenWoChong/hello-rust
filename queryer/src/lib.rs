@@ -4,7 +4,6 @@ use fetcher::retrieve_data;
 use polars::prelude::*;
 use sqlparser::parser::Parser;
 use std::ops::{Deref, DerefMut};
-use tracing::info;
 
 mod convert;
 mod dialect;
@@ -49,8 +48,6 @@ pub async fn query<T: AsRef<str>>(sql: T) -> Result<DataSet> {
         order_by,
     } = sql.try_into()?;
 
-    info!("retrieving data from source: {}", source);
-
     let ds = detect_content(retrieve_data(source).await?).load()?;
 
     let mut filtered = match condition {
@@ -58,12 +55,20 @@ pub async fn query<T: AsRef<str>>(sql: T) -> Result<DataSet> {
         None => ds.0.lazy(),
     };
 
-    filtered = order_by
-        .into_iter()
-        .fold(filtered, |acc, (col, desc)| acc.sort(&col, desc));
+    filtered = order_by.into_iter().fold(filtered, |acc, (col, desc)| {
+        acc.sort(
+            &col,
+            SortOptions {
+                descending: desc,
+                nulls_last: true,
+                multithreaded: false,
+                maintain_order: false,
+            },
+        )
+    });
 
     if offset.is_some() || limit.is_some() {
-        filtered = filtered.slice(offset.unwrap_or(0), limit.unwrap_or(usize::MAX))
+        filtered = filtered.slice(offset.unwrap_or(0), limit.unwrap_or(usize::MAX) as IdxSize);
     }
 
     Ok(DataSet(filtered.select(selection).collect()?))
