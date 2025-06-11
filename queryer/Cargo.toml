@@ -5,6 +5,9 @@ name = "dialect"
 name = "covid"
 
 [[example]]
+name = "covid_simple"
+
+[[example]]
 name = "local"
 
 [package]
