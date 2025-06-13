@@ -1,7 +1,97 @@
+use std::mem;
 use shared::utils;
 
 fn main() {
     println!("Hello, world!");
     utils::echo_utils();
     shared::echo();
+    testp();
+    test_bug();
+    test_vec_extend();
+}
+
+fn testp() {
+    let data = vec![1, 2, 3, 4];
+    let data1 = &data;
+    // 值的地址是什么？引用的地址又是什么？
+    println!(
+        "addr of value: {:p}({:p}), addr of data {:p}, data1: {:p}",
+        &data, data1, &&data, &data1
+    );
+    println!("sum of data1: {}", sum(data1));
+
+    // 堆上数据的地址是什么？
+    println!(
+        "addr of items: [{:p}, {:p}, {:p}, {:p}]",
+        &data[0], &data[1], &data[2], &data[3]
+    );
+}
+
+fn sum(data: &Vec<u32>) -> u32 {
+    // 值的地址会改变么？引用的地址会改变么？
+    println!("addr of value: {:p}, addr of ref: {:p}", data, &data);
+    data.iter().fold(0, |acc, x| acc + x)
+}
+
+fn test() {
+    let mut a = 0i32;
+    println!("{a}");
+    a = 2;
+    println!("{a}");
+
+    let print = |msg: String| println!("{}", msg); // 最后是 println! 语句，有分号
+    let print = |msg: String| format!("{}", msg); // 最后是 println! 语句，有分号
+
+    // 闭包返回 10（i32）
+    let returns_i32 = || {
+        let x = 5;
+        x * 2 // 表达式（无分号），作为返回值
+    };
+
+    // 闭包返回 ()
+    let returns_unit = || {
+        let x = 5;
+        x * 2; // 语句（有分号），返回 ()
+    };
+}
+
+fn test_bug() {
+    let mut arr = vec![1, 2, 3];
+    arr.push(32);
+    let last = arr.last().unwrap();
+    println!("last: {:?}", last);
+}
+
+fn test_vec_extend() {
+    // capacity 是 1, len 是 0
+    let mut v = vec![1];
+    // capacity 是 8, len 是 0
+    let v1: Vec<i32> = Vec::with_capacity(8);
+    
+    println!("----------");
+    println!("----------");
+
+    print_vec("v1", v1);
+
+    // 我们先打印 heap 地址，然后看看添加内容是否会导致堆重分配
+    println!("heap start: {:p}", &v[0] as *const i32);
+
+    extend_vec(&mut v);
+
+    // heap 地址改变了！这就是为什么可变引用和不可变引用不能共存的原因
+    println!("new heap start: {:p}", &v[0] as *const i32);
+
+    print_vec("v", v);
+}
+
+fn extend_vec(v: &mut Vec<i32>) {
+    // Vec<T> 堆内存里 T 的个数是指数增长的，我们让它恰好 push 33 个元素
+    // capacity 会变成 64
+    (2..34).into_iter().for_each(|i| v.push(i));
+}
+
+fn print_vec<T>(name: &str, data: Vec<T>) {
+    let p: [usize; 3] = unsafe { mem::transmute(data) };
+    // 打印 Vec<T> 的堆地址，capacity，len
+    println!("{}: heap addr: 0x{:x},\tcap {},\tlen {}", name, p[0], p[1], p[2]);
 }
