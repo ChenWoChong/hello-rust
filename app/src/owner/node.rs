@@ -20,8 +20,8 @@ impl Node {
         self.downstream = Some(ds)
     }
 
-    pub fn get_ds(&self) -> Option<Rc<Node>> {
-        self.downstream.clone()
+    pub fn get_downstream(&self) -> Option<Rc<Node>> {
+        self.downstream.as_ref().map(|v| v.clone())
     }
 }
 
@@ -33,7 +33,7 @@ pub fn test_up_ds() {
     node3.update_downstream(Rc::new(node4));
 
     node1.update_downstream(Rc::new(node3));
-    node2.update_downstream(node1.get_ds().unwrap());
+    node2.update_downstream(node1.get_downstream().unwrap());
     println!("node1:{:#?},\nnode2:{:#?}", node1, node2);
 }
 
