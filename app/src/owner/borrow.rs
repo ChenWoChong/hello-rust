@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::mem;
 
 pub fn print_addr() {
@@ -85,3 +86,12 @@ fn print_vec<T>(name: &str, data: Vec<T>) {
     );
 }
 
+pub fn inner_mut() {
+    let data = RefCell::new(1);
+    {
+        let mut v = data.borrow_mut();
+        *v += 1;
+    }
+    let cur_data = data.borrow();
+    println!("data: {:?}", cur_data)
+}

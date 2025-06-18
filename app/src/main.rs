@@ -1,6 +1,6 @@
 mod owner;
 
-use crate::owner::{print_addr, print_vec_extend, test_up_ds};
+use crate::owner::*;
 use shared::utils;
 
 fn main() {
@@ -12,4 +12,9 @@ fn main() {
     print_vec_extend();
 
     test_up_ds();
+    
+    println!("------------------\nPrint data inner mut:");
+    inner_mut();
+    thread_move();
+    thread_share();
 }
