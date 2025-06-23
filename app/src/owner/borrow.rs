@@ -95,3 +95,20 @@ pub fn inner_mut() {
     let cur_data = data.borrow();
     println!("data: {:?}", cur_data)
 }
+
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() { x } else { y }
+}
+
+pub fn caller() {
+    let string1 = String::from("long"); // 'string1 开始
+    let result;
+    {
+        let string2 = String::from("shorty"); // 'string2 开始
+        result = longest(string1.as_str(), string2.as_str()); // 'a 被具体化为 'string2 的生命周期(选择较短的生命周期)
+        println!("The longest is {}", result); // Ok, result 在 'string2 结束前使用
+    } // 'string2 结束！result (其生命周期 'a = 'string2) 在此失效
+
+    // 错误！尝试在 'a 结束后使用 result。编译器报错！
+    // println!("The longest is {}", result);
+} // 'string1 结束
