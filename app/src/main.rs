@@ -1,5 +1,6 @@
 mod owner;
 mod lifetime;
+mod generic;
 
 use crate::owner::*;
 use shared::utils;
