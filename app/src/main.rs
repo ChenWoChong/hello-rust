@@ -5,6 +5,7 @@ mod generic;
 use crate::owner::*;
 use shared::utils;
 use crate::lifetime::{test_map, test_str_strike};
+use generic::*;
 
 fn main() {
     println!("Hello, world!");
@@ -25,4 +26,6 @@ fn main() {
     
     test_str_strike();
     test_map();
+    println!("\n-------------------vtable-------------------\n");
+    print_vtable();
 }
