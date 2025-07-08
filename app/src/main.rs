@@ -1,11 +1,11 @@
-mod owner;
-mod lifetime;
 mod generic;
+mod lifetime;
+mod owner;
 
-use crate::owner::*;
-use shared::utils;
 use crate::lifetime::{test_map, test_str_strike};
+use crate::owner::*;
 use generic::*;
+use shared::utils;
 
 fn main() {
     println!("Hello, world!");
@@ -23,9 +23,11 @@ fn main() {
     thread_share();
 
     caller();
-    
+
     test_str_strike();
     test_map();
     println!("\n-------------------vtable-------------------\n");
     print_vtable();
+
+    // test_dyn_writer();
 }
