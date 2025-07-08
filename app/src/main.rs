@@ -30,4 +30,6 @@ fn main() {
     print_vtable();
 
     // test_dyn_writer();
+    println!("\n----------------add-complex-------------------\n");
+    test_add();
 }
