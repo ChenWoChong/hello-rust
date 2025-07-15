@@ -1,5 +1,3 @@
-use std::thread::sleep;
-
 struct SentenceIter<'a> {
     s: &'a mut &'a str,
     delimiter: char,
@@ -16,14 +14,26 @@ impl<'a> Iterator for SentenceIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.s.is_empty() {
-            return None
+            return None;
         }
-        let index = self.s.find(self.delimiter)?;
-        let delimiter_len = self.delimiter.len_utf8();
-        let end_index = index+delimiter_len;
-        let res = &self.s[..end_index];
-        *self.s = &self.s[end_index..];
-        Some(res)
+
+        match self.s.find(self.delimiter) {
+            Some(idx) => {
+                let len = self.delimiter.len_utf8();
+                let str = &self.s[..idx + len];
+                *self.s = &self.s[idx + len..];
+                return Some(str.trim());
+            }
+            None => {
+                let str = *self.s;
+                *self.s = "";
+                if str.len() == 0 {
+                    None
+                } else {
+                    Some(str.trim())
+                }
+            }
+        }
     }
 }
 
