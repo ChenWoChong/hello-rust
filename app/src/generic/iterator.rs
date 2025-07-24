@@ -46,6 +46,7 @@ fn it_works() {
     assert_eq!(iter.next(), None);
 }
 
+#[allow(dead_code)]
 fn main() {
     let mut s = "a。 b。 c";
     let sentences: Vec<_> = SentenceIter::new(&mut s, '。').collect();
