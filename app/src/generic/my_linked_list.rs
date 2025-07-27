@@ -28,10 +28,12 @@ impl<T> Index<isize> for List<T> {
     type Output = T;
 
     fn index(&self, index: isize) -> &Self::Output {
-        let len = self.len() as isize;
-        let n = (len + index % len) % len;
-        let iter = self.iter();
-        iter.skip(n as usize).next().unwrap()
+        let len = self.len();
+        if len == 0 {
+            panic!("index out of bounds");
+        }
+        let effective_index = index.rem_euclid(len as isize) as usize;
+        self.iter().nth(effective_index).unwrap()
     }
 }
 
