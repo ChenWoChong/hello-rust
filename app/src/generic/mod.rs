@@ -10,4 +10,4 @@ pub use my_add::test_add;
 
 pub use vtable::*;
 
-pub use cow::print_url_kv;
+pub use cow::{print_url_kv, print_user_cow};

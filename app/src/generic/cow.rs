@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use std::borrow::Cow;
 use url::Url;
 
@@ -33,5 +34,29 @@ fn show_cow(cow: Cow<str>) -> String {
     match cow {
         Cow::Borrowed(v) => format!("Borrowed( {} )", v),
         Cow::Owned(v) => format!("Owned( {} )", v),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct User<'input> {
+    #[serde(borrow)]
+    name: Cow<'input, str>,
+    #[allow(dead_code)]
+    age: u8,
+}
+
+pub fn print_user_cow() {
+    let input = r#"{ "name": "Tyr", "age": 18 }"#;
+    let mut user: User = serde_json::from_str(input).unwrap();
+
+    println!("---User Name---");
+    match user.name {
+        Cow::Borrowed(x) => println!("borrowed name: {}", x),
+        Cow::Owned(ref x) => println!("owned name: {}", x),
+    }
+    user.name.to_mut().push_str("_change");
+    match user.name {
+        Cow::Borrowed(x) => println!("borrowed name: {}", x),
+        Cow::Owned(x) => println!("owned name: {}", x),
     }
 }
