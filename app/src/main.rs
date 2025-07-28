@@ -4,7 +4,7 @@ mod owner;
 
 use crate::lifetime::{test_map, test_str_strike};
 use crate::owner::*;
-use generic::*;
+use generic::{print_url_kv, print_vtable, test_add};
 use shared::utils;
 
 fn main() {
@@ -32,4 +32,7 @@ fn main() {
     // test_dyn_writer();
     println!("\n----------------add-complex-------------------\n");
     test_add();
+
+    println!("\n----------------cow-print-------------------\n");
+    print_url_kv();
 }
