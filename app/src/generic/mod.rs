@@ -6,6 +6,7 @@ mod mutex_guard;
 mod my_add;
 mod my_linked_list;
 mod vtable;
+mod my_string;
 
 pub use my_add::test_add;
 
