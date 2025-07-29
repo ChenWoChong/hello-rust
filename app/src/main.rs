@@ -4,7 +4,7 @@ mod owner;
 
 use crate::lifetime::{test_map, test_str_strike};
 use crate::owner::*;
-use generic::{print_url_kv, print_user_cow, print_vtable, test_add};
+use generic::{example_mutex_hash_map, print_url_kv, print_user_cow, print_vtable, test_add};
 use shared::utils;
 
 fn main() {
@@ -36,4 +36,7 @@ fn main() {
     println!("\n----------------cow-print-------------------\n");
     print_url_kv();
     print_user_cow();
+
+    println!("\n----------------example_mutex_hash_map-------------------\n");
+    example_mutex_hash_map();
 }
