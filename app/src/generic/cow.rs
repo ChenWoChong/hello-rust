@@ -59,4 +59,9 @@ pub fn print_user_cow() {
         Cow::Borrowed(x) => println!("borrowed name: {}", x),
         Cow::Owned(x) => println!("owned name: {}", x),
     }
+
+    let len_u8 = size_of::<Cow<u8>>();
+    let len_str = size_of::<Cow<str>>();
+    println!("Size of Cow<u8> is {}", len_u8);
+    println!("Size of Cow<str> is {}", len_str);
 }
