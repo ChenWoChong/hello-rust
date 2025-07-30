@@ -4,7 +4,9 @@ mod owner;
 
 use crate::lifetime::{test_map, test_str_strike};
 use crate::owner::*;
-use generic::{example_mutex_hash_map, print_url_kv, print_user_cow, print_vtable, test_add};
+use generic::{
+    example_mutex_hash_map, print_url_kv, print_user_cow, print_vtable, test_add, test_my_string,
+};
 use shared::utils;
 
 fn main() {
@@ -39,4 +41,7 @@ fn main() {
 
     println!("\n----------------example_mutex_hash_map-------------------\n");
     example_mutex_hash_map();
+
+    println!("\n----------------test_my_string-------------------\n");
+    test_my_string();
 }
