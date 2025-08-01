@@ -45,6 +45,18 @@ pub fn test_print_slice() {
     print_slice1(arr);
 }
 
+#[allow(dead_code)]
+pub fn test_print_str() {
+    let s = String::from("hello");
+    print_ref_str(&s);
+    print_ref_str(&s[..]);
+    print_ref_str(s.clone());
+
+    print_ref_debug::<_, str>(&s);
+    print_ref_debug::<_, str>(&s[..]);
+    print_ref_debug::<_, str>(s.clone());
+}
+
 // 注意下面的泛型函数的使用
 fn print_slice<T: fmt::Debug>(s: &[T]) {
     println!("{:?}", s);
@@ -54,6 +66,18 @@ fn print_slice1<T, U>(s: T)
 where
     T: AsRef<[U]>,
     U: fmt::Debug,
+{
+    println!("{:?}", s.as_ref());
+}
+
+fn print_ref_str<T: AsRef<str>>(s: T) {
+    println!("{:?}", s.as_ref())
+}
+
+fn print_ref_debug<T, U>(s: T)
+where
+    T: AsRef<U>,
+    U: fmt::Debug + ?Sized,
 {
     println!("{:?}", s.as_ref());
 }

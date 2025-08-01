@@ -17,6 +17,8 @@ pub use cow::{print_url_kv, print_user_cow};
 
 pub use mutex_guard::example_mutex_hash_map;
 
-pub use container::{print_arr_vec, test_print_iter, test_print_slice, test_vec_box};
+pub use container::{
+    print_arr_vec, test_print_iter, test_print_slice, test_print_str, test_vec_box,
+};
 
 pub use my_string::test_my_string;

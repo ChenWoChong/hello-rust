@@ -6,7 +6,7 @@ use crate::lifetime::{test_map, test_str_strike};
 use crate::owner::*;
 use generic::{
     example_mutex_hash_map, print_arr_vec, print_url_kv, print_user_cow, print_vtable, test_add,
-    test_my_string, test_print_iter, test_print_slice, test_vec_box,
+    test_my_string, test_print_iter, test_print_slice, test_print_str, test_vec_box,
 };
 use shared::utils;
 
@@ -51,4 +51,5 @@ fn main() {
     test_print_slice();
     test_print_iter();
     test_vec_box();
+    test_print_str();
 }
