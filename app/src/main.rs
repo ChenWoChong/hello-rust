@@ -9,6 +9,7 @@ use generic::{
     test_my_string, test_print_iter, test_print_slice, test_print_str, test_vec_box,
 };
 use shared::utils;
+use crate::generic::test_hash_map;
 
 fn main() {
     println!("Hello, world!");
@@ -52,4 +53,7 @@ fn main() {
     test_print_iter();
     test_vec_box();
     test_print_str();
+    
+    println!("\n----------------print_hash_map-------------------\n");
+    test_hash_map();
 }

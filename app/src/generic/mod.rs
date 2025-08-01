@@ -2,6 +2,7 @@ mod container;
 mod copy;
 mod cow;
 mod generic;
+mod hash_map;
 mod iterator;
 mod mutex_guard;
 mod my_add;
@@ -22,3 +23,5 @@ pub use container::{
 };
 
 pub use my_string::test_my_string;
+
+pub use hash_map::test_hash_map;
