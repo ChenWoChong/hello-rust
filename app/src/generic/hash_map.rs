@@ -10,18 +10,18 @@ pub fn test_hash_map() {
     map.insert('b', 2);
     map.insert('c', 3);
     explain("added 3", &map);
-    
+
     map.insert('d', 4);
     explain("added 4", &map);
-    
+
     assert_eq!(map.get(&'a'), Some(&1));
     assert_eq!(map.get_key_value(&'b'), Some((&'b', &2)));
-    
+
     map.remove(&'a');
     assert_eq!(map.contains_key(&'a'), false);
     assert_eq!(map.get(&'a'), None);
     explain("removed", &map);
-    
+
     map.shrink_to_fit();
     explain("shrinked", &map);
 }
@@ -39,4 +39,32 @@ fn explain<K, V>(name: &str, map: &HashMap<K, V>) {
         bucket_mask = bucket_mask,
         capacity = capacity,
     );
+}
+
+use std::collections::BTreeMap;
+
+#[derive(Ord, Debug, PartialEq, Eq, Hash, PartialOrd)]
+struct Name {
+    pub name: String,
+    pub flags: u32,
+}
+
+impl Name {
+    pub fn new(name: impl AsRef<str>, flags: u32) -> Self {
+        Self {
+            name: name.as_ref().to_string(),
+            flags,
+        }
+    }
+}
+
+pub fn test_map_key_name() {
+    let mut map = BTreeMap::new();
+    map.insert(Name::new("/etc/password", 0x1), 12);
+    map.insert(Name::new("/etc/hosts", 0x1), 4);
+    map.insert(Name::new("/home/tchen", 0x0), 28);
+
+    for item in map.iter() {
+        println!("{:?}", item);
+    }
 }
