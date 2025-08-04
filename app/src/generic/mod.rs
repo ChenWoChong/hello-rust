@@ -24,4 +24,4 @@ pub use container::{
 
 pub use my_string::test_my_string;
 
-pub use hash_map::{test_hash_map,test_map_key_name};
+pub use hash_map::{test_btree_map, test_hash_map, test_map_key_name};

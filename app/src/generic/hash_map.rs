@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 
 pub fn test_hash_map() {
@@ -41,8 +42,6 @@ fn explain<K, V>(name: &str, map: &HashMap<K, V>) {
     );
 }
 
-use std::collections::BTreeMap;
-
 #[derive(Ord, Debug, PartialEq, Eq, Hash, PartialOrd)]
 struct Name {
     pub name: String,
@@ -62,8 +61,24 @@ pub fn test_map_key_name() {
     let mut map = BTreeMap::new();
     map.insert(Name::new("/etc/password", 0x1), 12);
     map.insert(Name::new("/etc/hosts", 0x1), 4);
-    map.insert(Name::new("/home/tchen", 0x0), 28);
+    map.insert(Name::new("/home/user", 0x0), 28);
 
+    for item in map.iter() {
+        println!("{:?}", item);
+    }
+}
+
+pub fn test_btree_map() {
+    println!("-----test btree_map-----");
+    let mut map = BTreeMap::new();
+    for i in 0..16usize {
+        map.insert(format!("chen {}", i), i);
+        println!("Insert： chen {}", i);
+    }
+
+    map.remove("chen 1");
+    println!("----------removed chen1----------");
+    println!("----------Iter btree_map----------");
     for item in map.iter() {
         println!("{:?}", item);
     }
