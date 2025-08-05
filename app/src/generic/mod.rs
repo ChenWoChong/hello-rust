@@ -9,6 +9,7 @@ mod my_add;
 mod my_linked_list;
 mod my_string;
 mod vtable;
+mod try_gdb;
 
 pub use my_add::test_add;
 

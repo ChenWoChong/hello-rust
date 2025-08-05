@@ -1,16 +1,20 @@
 #[derive(Debug)]
+#[allow(dead_code)]
 enum Gender {
     Unknown = 0,
     Female = 1,
     Male = 2,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Copy, Clone)]
 struct UserID(u64);
 
+#[allow(dead_code)]
 #[derive(Debug, Copy, Clone)]
 struct TopicID(u64);
 
+#[allow(dead_code)]
 #[derive(Debug)]
 struct User {
     id: UserID,
@@ -18,12 +22,14 @@ struct User {
     gender: Gender,
 }
 
+#[allow(dead_code)]
 struct Topic {
     id: TopicID,
     name: String,
     owner: UserID,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 enum Event {
     Join((UserID, TopicID)),

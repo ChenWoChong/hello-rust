@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 fn fib_loop(n: u8) -> u8 {
     let mut a = 1;
     let mut b = 1;
@@ -15,6 +16,7 @@ fn fib_loop(n: u8) -> u8 {
     res
 }
 
+#[allow(dead_code)]
 fn fib_while(n: u8) -> u8 {
     let (mut a, mut b, mut i) = (1u8, 1u8, 2u8);
     while i < n {
@@ -25,6 +27,7 @@ fn fib_while(n: u8) -> u8 {
     b
 }
 
+#[allow(dead_code)]
 fn fib_for(n: u8) -> u8 {
     let (mut a, mut b) = (1u8, 1u8);
 
