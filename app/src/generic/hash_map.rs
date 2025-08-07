@@ -1,5 +1,5 @@
-use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::collections::{BTreeMap, HashSet};
 
 pub fn test_hash_map() {
     let mut map = HashMap::new();
@@ -81,5 +81,33 @@ pub fn test_btree_map() {
     println!("----------Iter btree_map----------");
     for item in map.iter() {
         println!("{:?}", item);
+    }
+}
+
+#[allow(dead_code)]
+struct Solution {}
+
+impl Solution {
+    #[allow(dead_code)]
+    pub fn group_anagrams(strs: Vec<String>) -> Vec<Vec<String>> {
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    pub fn two_sum(nums: Vec<i32>, target: i32) -> Vec<i32> {
+        // cal the other
+        // get from map, if exist , return , else insert to map
+        use std::collections::HashMap;
+        let mut mp = HashMap::new();
+        for (idx, &num) in nums.iter().enumerate() {
+            let another = target - num;
+            if mp.get(&another).is_none() {
+                mp.insert(num, idx as i32);
+            } else {
+                let a_idx = mp.get(&another).unwrap().to_owned();
+                return vec![a_idx, idx as i32];
+            }
+        }
+        vec![-1, -1]
     }
 }
