@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::collections::HashMap;
 use std::collections::{BTreeMap, HashSet};
 
@@ -90,7 +91,68 @@ struct Solution {}
 impl Solution {
     #[allow(dead_code)]
     pub fn group_anagrams(strs: Vec<String>) -> Vec<Vec<String>> {
-        todo!()
+        // map
+        // for strs
+        // sort chars
+        // add to map
+        // for strs to gen result
+        use std::collections::HashMap;
+        let mut map: HashMap<String, Vec<String>> = HashMap::default();
+        for str in strs {
+            let mut str_char = str.chars().collect::<Vec<char>>();
+            str_char.sort();
+            let sort_str: String = str_char.into_iter().collect();
+            if map.contains_key(&sort_str) {
+                let mut key_map = map.get_mut(&sort_str).unwrap().to_owned();
+                key_map.push(str);
+                map.insert(sort_str, key_map);
+            } else {
+                let mut key_map: Vec<String> = Vec::new();
+                key_map.push(str);
+                map.insert(sort_str, key_map);
+            }
+        }
+
+        let mut res: Vec<Vec<String>> = Vec::new();
+        for (_, v) in map {
+            res.push(v);
+        }
+        res
+    }
+
+    #[allow(dead_code)]
+    pub fn group_anagrams2(strs: Vec<String>) -> Vec<Vec<String>> {
+        // map
+        // for strs
+        // sort chars
+        // add to map
+        // for strs to gen result
+        use std::collections::HashMap;
+        let mut map: HashMap<String, Vec<String>> = HashMap::default();
+        for str in strs {
+            let mut str_char = str.chars().collect::<Vec<char>>();
+            str_char.sort();
+            let sort_str: String = str_char.into_iter().collect();
+            map.entry(sort_str).or_insert_with(Vec::new).push(str);
+        }
+        map.into_values().collect()
+    }
+
+    #[allow(dead_code)]
+    pub fn group_anagrams3(strs: Vec<String>) -> Vec<Vec<String>> {
+        // map
+        // for strs
+        // sort chars
+        // add to map
+        // for strs to gen result
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        for str in strs {
+            let mut str_char = str.chars().collect::<Vec<char>>();
+            str_char.sort_unstable();
+            map.entry(str_char).or_insert_with(Vec::new).push(str);
+        }
+        map.into_values().collect()
     }
 
     #[allow(dead_code)]
