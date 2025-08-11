@@ -6,9 +6,9 @@ use crate::generic::{test_hash_map, test_map_key_name};
 use crate::lifetime::{test_map, test_str_strike};
 use crate::owner::*;
 use generic::{
-    example_mutex_hash_map, print_arr_vec, print_url_kv, print_user_cow, print_vtable, test_add,
-    test_btree_map, test_my_string, test_print_iter, test_print_slice, test_print_str,
-    test_vec_box,
+    call_as_fn_once, call_fn_once, example_mutex_hash_map, print_arr_vec, print_closure_size,
+    print_url_kv, print_user_cow, print_vtable, test_add, test_btree_map, test_my_string,
+    test_print_iter, test_print_slice, test_print_str, test_vec_box,call_fn_mut,
 };
 use shared::utils;
 
@@ -59,4 +59,10 @@ fn main() {
     test_hash_map();
     test_map_key_name();
     test_btree_map();
+
+    println!("\n----------------print_closure-------------------\n");
+    print_closure_size();
+    call_fn_once();
+    call_as_fn_once();
+    call_fn_mut();
 }

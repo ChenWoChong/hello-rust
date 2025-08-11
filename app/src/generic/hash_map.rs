@@ -1,6 +1,5 @@
-use itertools::Itertools;
 use std::collections::HashMap;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 
 pub fn test_hash_map() {
     let mut map = HashMap::new();
