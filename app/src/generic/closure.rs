@@ -106,3 +106,78 @@ pub fn call_fn_mut() {
     call_once(c);
     call_once(c1);
 }
+
+pub fn call_fn() {
+    fn call(arg: u64, c: &impl Fn(u64) -> u64) -> u64 {
+        c(arg)
+    }
+    fn call_mut(arg: u64, c: &mut impl FnMut(u64) -> u64) -> u64 {
+        c(arg)
+    }
+    fn call_once(arg: u64, c: impl FnOnce(u64) -> u64) -> u64 {
+        c(arg)
+    }
+
+    let v = vec![0u8; 1024];
+    let v1 = vec![0u8; 1023];
+
+    let mut c = |x: u64| v.len() as u64 * x;
+    let mut c1 = |x: u64| v1.len() as u64 * x;
+
+    println!("direction call: {}", c(2));
+    println!("direction call: {}", c1(2));
+
+    println!("call: {}", call(3, &c));
+    println!("call: {}", call(3, &c1));
+
+    println!("call_mut: {}", call_mut(4, &mut c));
+    println!("call_mut: {}", call_mut(4, &mut c1));
+
+    println!("call_once: {}", call_once(5, c));
+    println!("call_once: {}", call_once(5, c1));
+    println!("call_once: {}", call_once(5, c));
+    println!("call_once: {}", call_once(5, c1));
+}
+
+pub trait Executor {
+    fn execute(&self, cmd: &str) -> Result<String, &'static str>;
+}
+
+struct BashExecutor {
+    env: String,
+}
+
+impl Executor for BashExecutor {
+    fn execute(&self, cmd: &str) -> Result<String, &'static str> {
+        Ok(format!(
+            "fake bash execute: env: {}, cmd: {}",
+            self.env, cmd
+        ))
+    }
+}
+
+impl<T> Executor for T
+where
+    T: Fn(&str) -> Result<String, &'static str>,
+{
+    fn execute(&self, cmd: &str) -> Result<String, &'static str> {
+        self(cmd)
+    }
+}
+
+pub fn test_executor() {
+    let env = "PATH=/usr/bin".to_string();
+
+    let cmd = "cat /etc/passwd";
+    let r1 = execute(cmd, BashExecutor { env: env.clone() });
+    println!("{:?}", r1);
+
+    let r2 = execute(cmd, |cmd: &str| {
+        Ok(format!("fake fish execute: env: {}, cmd: {}", env, cmd))
+    });
+    println!("{:?}", r2);
+}
+
+fn execute(cmd: &str, exec: impl Executor) -> Result<String, &'static str> {
+    exec.execute(cmd)
+}
