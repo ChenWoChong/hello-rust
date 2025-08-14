@@ -4,4 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = ["app", "httpie", "leetcode", "queryer", "scrape_url", "shared", "thumbor"]
+members = ["app", "httpie", "kv-server1", "kv1", "leetcode", "queryer", "scrape_url", "shared", "thumbor"]
+
+[dependencies]
+tokio = "1.47.1"
