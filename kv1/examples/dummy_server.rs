@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_prost::AsyncProstStream;
+use futures::{SinkExt, StreamExt};
 use kv1::{CommandRequest, CommandResponse};
 use tokio::net::TcpListener;
 use tracing::info;
@@ -18,10 +19,19 @@ async fn main() -> Result<()> {
 
         tokio::spawn(async move {
             let mut stream =
-                AsyncProstStream::<_, CommandRequest, CommandResponse, _>::from(stream);
-                todo!()
-                    ()
+                AsyncProstStream::<_, CommandRequest, CommandResponse, _>::from(stream).for_async();
+            while let Some(Ok(msg)) = stream.next().await {
+                info!("Got a command: {:?}", msg);
+                let mut resp = CommandResponse::default();
+                resp.status = 404;
+                resp.message = "Not found".to_string();
+
+                if let Err(e) = stream.send(resp).await {
+                    info!("Failed to send response: {:?}", e);
+                }
             }
+            
+            info!("Client {:?} disconnected", addr);
         });
     }
 }
