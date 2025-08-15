@@ -1,7 +1,8 @@
 use crate::proto::abi::command_request::RequestData;
-use crate::proto::abi::{CommandRequest, Hset, Kvpair, Value, value};
+pub use crate::proto::abi::{CommandRequest, Hset, Kvpair, Value, value};
 
 mod abi;
+pub use abi::*;
 
 impl CommandRequest {
     #[allow(dead_code)]
