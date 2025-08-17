@@ -26,26 +26,38 @@ impl MemTable {
 
 impl Storage for MemTable {
     fn get(&self, table: &str, key: &str) -> Result<Option<Value>, KvError> {
-        todo!()
+        let table = self.get_or_create_table(table);
+        Ok(table.get(key).map(|v| v.value().clone()))
     }
 
     fn set(&self, table: &str, key: String, value: Value) -> Result<Option<Value>, KvError> {
-        todo!()
+        let table = self.get_or_create_table(table);
+        Ok(table.insert(key, value))
     }
 
     fn contains(&self, table: &str, key: &str) -> Result<bool, KvError> {
-        todo!()
+        let table = self.get_or_create_table(table);
+        Ok(table.contains_key(key))
     }
 
     fn del(&self, table: &str, key: &str) -> Result<Option<Value>, KvError> {
-        todo!()
+        let table = self.get_or_create_table(table);
+        Ok(table.remove(key).map(|(_k, v)| v))
     }
 
     fn get_all(&self, table: &str) -> Result<Vec<Kvpair>, KvError> {
-        todo!()
+        let table = self.get_or_create_table(table);
+        Ok(table
+            .iter()
+            .map(|v| Kvpair::new(v.key(), v.value().clone()))
+            .collect())
     }
 
     fn get_iter(&self, table: &str) -> Result<Box<dyn Iterator<Item = Kvpair>>, KvError> {
+        // 查询出 dashMap
+        let _table = self.get_or_create_table(table);
+
+        // 返回迭代器
         todo!()
     }
 }
