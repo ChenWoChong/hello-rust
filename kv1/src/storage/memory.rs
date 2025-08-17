@@ -7,10 +7,12 @@ pub struct MemTable {
 }
 
 impl MemTable {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[allow(dead_code)]
     pub fn get_or_create_table(&self, name: &str) -> Ref<String, DashMap<String, Value>> {
         match self.tables.get(name) {
             Some(table) => table,
@@ -43,7 +45,7 @@ impl Storage for MemTable {
         todo!()
     }
 
-    fn get_iter(&self, table: &str) -> Result<Box<dyn Iterator<Item=Kvpair>>, KvError> {
+    fn get_iter(&self, table: &str) -> Result<Box<dyn Iterator<Item = Kvpair>>, KvError> {
         todo!()
     }
 }
