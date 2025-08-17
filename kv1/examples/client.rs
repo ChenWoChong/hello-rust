@@ -18,10 +18,10 @@ async fn main() -> Result<()> {
 
     let cmd = CommandRequest::new_hset("table1", "hello", "world".into());
 
-    client.send(cmd).await?;
-    if let Some(Ok(data)) = client.next().await {
-        info!("Got response {:?}", data);
-    }
+    // client.send(cmd).await?;
+    // if let Some(Ok(data)) = client.next().await {
+    //     info!("Got response {:?}", data);
+    // }
 
     Ok(())
 }
