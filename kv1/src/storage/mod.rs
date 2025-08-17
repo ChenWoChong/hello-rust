@@ -1,6 +1,8 @@
 mod memory;
 
 use crate::{KvError, Kvpair, Value};
+#[allow(unused_imports)]
+pub use memory::MemTable;
 
 pub trait Storage {
     fn get(&self, table: &str, key: &str) -> Result<Option<Value>, KvError>;

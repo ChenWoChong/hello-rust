@@ -1,9 +1,11 @@
-mod proto;
 mod error;
+mod proto;
+mod service;
 mod storage;
 
-pub use proto::*;
 pub use error::*;
+pub use proto::*;
+pub use service::*;
 pub use storage::Storage;
 
 pub fn add(left: u64, right: u64) -> u64 {
