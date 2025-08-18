@@ -1,4 +1,4 @@
-use crate::{CommandResponse, CommandService, Hget, Hgetall, Hset, KvError, Storage};
+use crate::{CommandResponse, CommandService, Hget, Hgetall, Hset, KvError, Storage, Value};
 
 impl CommandService for Hget {
     fn execute(self, store: &impl Storage) -> CommandResponse {
@@ -24,10 +24,10 @@ impl CommandService for Hset {
         match self.pair {
             Some(v) => match store.set(&self.table, v.key, v.value.unwrap_or_default()) {
                 Ok(Some(v)) => v.into(),
-                Ok(None) => KvError::NotFound("none".into(), "none".into()).into(),
+                Ok(None) => Value::default().into(),
                 Err(e) => e.into(),
             },
-            None => KvError::NotFound("none".to_string(), "none".into()).into(),
+            None => Value::default().into(),
         }
     }
 }

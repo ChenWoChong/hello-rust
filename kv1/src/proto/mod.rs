@@ -1,5 +1,6 @@
 use crate::proto::abi::command_request::RequestData;
 pub use crate::proto::abi::{CommandRequest, Hset, Kvpair, Value, value};
+use http::StatusCode;
 
 mod abi;
 use crate::KvError;
@@ -70,7 +71,7 @@ impl From<&str> for Value {
 impl From<Value> for CommandResponse {
     fn from(value: Value) -> Self {
         Self {
-            status: 200,
+            status: StatusCode::OK.as_u16() as _,
             values: vec![value],
             ..Default::default()
         }
@@ -80,7 +81,7 @@ impl From<Value> for CommandResponse {
 impl From<Vec<Kvpair>> for CommandResponse {
     fn from(value: Vec<Kvpair>) -> Self {
         Self {
-            status: 200,
+            status: StatusCode::OK.as_u16() as _,
             pairs: value,
             ..Default::default()
         }
@@ -90,15 +91,15 @@ impl From<Vec<Kvpair>> for CommandResponse {
 impl From<KvError> for CommandResponse {
     fn from(err: KvError) -> Self {
         let mut result = Self {
-            status: 501,
+            status: StatusCode::INTERNAL_SERVER_ERROR.as_u16() as _,
             message: err.to_string(),
             values: vec![],
             pairs: vec![],
         };
 
         match err {
-            KvError::NotFound(_, _) => result.status = 404,
-            KvError::InvalidCommand(_) => result.status = 504,
+            KvError::NotFound(_, _) => result.status = StatusCode::NOT_FOUND.as_u16() as _,
+            KvError::InvalidCommand(_) => result.status = StatusCode::BAD_REQUEST.as_u16() as _,
             _ => {}
         }
         result
