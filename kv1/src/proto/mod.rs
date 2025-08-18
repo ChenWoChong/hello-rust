@@ -17,6 +17,15 @@ impl CommandRequest {
         }
     }
 
+    pub fn new_hmset(table: impl Into<String>, items: Vec<Kvpair>) -> Self {
+        Self {
+            request_data: Some(RequestData::Hmset(Hmset {
+                table: table.into(),
+                pairs: items,
+            })),
+        }
+    }
+
     pub fn new_hget(table: impl Into<String>, key: impl Into<String>) -> Self {
         Self {
             request_data: Some(RequestData::Hget(Hget {
@@ -97,6 +106,21 @@ impl From<Vec<Kvpair>> for CommandResponse {
             status: StatusCode::OK.as_u16() as _,
             pairs: value,
             ..Default::default()
+        }
+    }
+}
+
+impl From<bool> for CommandResponse {
+    fn from(value: bool) -> Self {
+        match value {
+            true => Self {
+                status: StatusCode::OK.as_u16() as _,
+                ..Default::default()
+            },
+            false => Self {
+                status: StatusCode::INTERNAL_SERVER_ERROR.as_u16() as _,
+                ..Default::default()
+            },
         }
     }
 }

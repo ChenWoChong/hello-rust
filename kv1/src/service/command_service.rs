@@ -1,3 +1,4 @@
+use crate::Hmset;
 use crate::command_request::RequestData;
 #[allow(unused_imports)]
 use crate::{
@@ -44,6 +45,15 @@ impl CommandService for Hset {
                 Err(e) => e.into(),
             },
             None => Value::default().into(),
+        }
+    }
+}
+
+impl CommandService for Hmset {
+    fn execute(self, store: &impl Storage) -> CommandResponse {
+        match store.mset(&self.table, self.pairs) {
+            Ok(v) => v.into(),
+            Err(e) => e.into(),
         }
     }
 }
@@ -167,6 +177,7 @@ pub fn dispatch(cmd: CommandRequest, store: &impl Storage) -> CommandResponse {
         Some(RequestData::Hmget(param)) => param.execute(store),
         Some(RequestData::Hgetall(param)) => param.execute(store),
         Some(RequestData::Hset(param)) => param.execute(store),
+        Some(RequestData::Hmset(param)) => param.execute(store),
         None => KvError::InvalidCommand("Request has no data".into()).into(),
         _ => KvError::Internal("Not implemented".into()).into(),
     }
