@@ -30,6 +30,20 @@ impl Storage for MemTable {
         Ok(table.get(key).map(|v| v.value().clone()))
     }
 
+    fn mget(&self, table: &str, keys: Vec<&str>) -> Result<Vec<Kvpair>, KvError> {
+        let table = self.get_or_create_table(table);
+        let mut res: Vec<Kvpair> = Vec::new();
+        for key in keys {
+            let cur = table
+                .get(key)
+                .map(|v| Kvpair::new(v.key(), v.value().clone()));
+            if let Some(v) = cur {
+                res.push(v);
+            }
+        }
+        Ok(res)
+    }
+
     fn set(&self, table: &str, key: String, value: Value) -> Result<Option<Value>, KvError> {
         let table = self.get_or_create_table(table);
         Ok(table.insert(key, value))
