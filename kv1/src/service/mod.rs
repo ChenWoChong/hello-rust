@@ -88,4 +88,37 @@ mod tests {
             ],
         )
     }
+
+    #[test]
+    fn service_h_del_should_works() {
+        let service = Service::new(MemTable::new());
+
+        let cloned = service.clone();
+
+        let handle = spawn(move || {
+            let res = cloned.execute(CommandRequest::new_hmset(
+                "t2",
+                vec![
+                    Kvpair::new("k1", "v1".into()),
+                    Kvpair::new("k2", "v2".into()),
+                    Kvpair::new("k3", "v3".into()),
+                ],
+            ));
+            assert_res_ok(res, &[], &[]);
+        });
+        handle.join().unwrap();
+
+        let res = service.execute(CommandRequest::new_hdel("t2", "k1"));
+        assert_res_ok(res, &["v1".into()], &[]);
+
+        let res = service.execute(CommandRequest::new_hmget("t2", ["k1", "k2", "k3"]));
+        assert_res_ok(
+            res,
+            &[],
+            &[
+                Kvpair::new("k2", "v2".into()),
+                Kvpair::new("k3", "v3".into()),
+            ],
+        )
+    }
 }

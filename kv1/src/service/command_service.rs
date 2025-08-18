@@ -1,9 +1,8 @@
-use crate::Hmset;
 use crate::command_request::RequestData;
 #[allow(unused_imports)]
 use crate::{
-    CommandRequest, CommandResponse, CommandService, Hget, Hgetall, Hmget, Hset, KvError, Kvpair,
-    MemTable, Storage, Value,
+    CommandRequest, CommandResponse, CommandService, Hdel, Hget, Hgetall, Hmget, Hmset, Hset,
+    KvError, Kvpair, MemTable, Storage, Value,
 };
 use std::sync::Arc;
 use tracing::debug;
@@ -53,6 +52,16 @@ impl CommandService for Hmset {
     fn execute(self, store: &impl Storage) -> CommandResponse {
         match store.mset(&self.table, self.pairs) {
             Ok(v) => v.into(),
+            Err(e) => e.into(),
+        }
+    }
+}
+
+impl CommandService for Hdel {
+    fn execute(self, store: &impl Storage) -> CommandResponse {
+        match store.del(&self.table, &self.key) {
+            Ok(Some(v)) => v.into(),
+            Ok(None) => Value::default().into(),
             Err(e) => e.into(),
         }
     }
@@ -178,6 +187,7 @@ pub fn dispatch(cmd: CommandRequest, store: &impl Storage) -> CommandResponse {
         Some(RequestData::Hgetall(param)) => param.execute(store),
         Some(RequestData::Hset(param)) => param.execute(store),
         Some(RequestData::Hmset(param)) => param.execute(store),
+        Some(RequestData::Hdel(param)) => param.execute(store),
         None => KvError::InvalidCommand("Request has no data".into()).into(),
         _ => KvError::Internal("Not implemented".into()).into(),
     }
