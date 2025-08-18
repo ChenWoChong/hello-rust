@@ -14,6 +14,8 @@ pub trait Storage {
 
     fn set(&self, table: &str, key: String, value: Value) -> Result<Option<Value>, KvError>;
 
+    fn mset(&self, table: &str, items: Vec<Kvpair>) -> Result<bool, KvError>;
+
     fn contains(&self, table: &str, key: &str) -> Result<bool, KvError>;
 
     fn del(&self, table: &str, key: &str) -> Result<Option<Value>, KvError>;
@@ -44,6 +46,12 @@ mod tests {
     fn mem_table_m_get_should_work() {
         let store = MemTable::new();
         test_m_get(store);
+    }
+
+    #[test]
+    fn mem_table_m_set_should_work() {
+        let store = MemTable::new();
+        test_m_set(store);
     }
 
     // #[test]
@@ -123,6 +131,30 @@ mod tests {
         );
 
         let mut data = store.mget("t2", vec!["k1", "k2", "k3", "k4"]).unwrap();
+        data.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        assert_eq!(
+            data,
+            vec![
+                Kvpair::new("k1", "v1".into()),
+                Kvpair::new("k2", "v2".into()),
+                Kvpair::new("k3", "v3".into()),
+            ]
+        );
+    }
+
+    fn test_m_set(store: impl Storage) {
+        store
+            .mset(
+                "t1",
+                vec![
+                    Kvpair::new("k1", "v1".into()),
+                    Kvpair::new("k2", "v2".into()),
+                    Kvpair::new("k3", "v3".into()),
+                ],
+            )
+            .unwrap();
+
+        let mut data = store.mget("t1", vec!["k1", "k2", "k3"]).unwrap();
         data.sort_by(|a, b| a.partial_cmp(b).unwrap());
         assert_eq!(
             data,

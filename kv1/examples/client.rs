@@ -129,7 +129,7 @@ async fn main() -> Result<()> {
     // h_m_get
     let cmd = CommandRequest::new_hmget(
         "table1",
-        ["hello", "hello1", "hello2"],
+        ["hello", "hello1", "hello2", "hello3"],
     );
     info!("Sending command: {:?}", cmd);
     client.send(cmd).await?;

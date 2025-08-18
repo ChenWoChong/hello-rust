@@ -53,6 +53,14 @@ impl Storage for MemTable {
         Ok(table.insert(key, value))
     }
 
+    fn mset(&self, table: &str, items: Vec<Kvpair>) -> Result<bool, KvError> {
+        let table = self.get_or_create_table(table);
+        for Kvpair { key, value } in items {
+            let _ = table.insert(key, value.unwrap());
+        }
+        Ok(true)
+    }
+
     fn contains(&self, table: &str, key: &str) -> Result<bool, KvError> {
         let table = self.get_or_create_table(table);
         Ok(table.contains_key(key))
