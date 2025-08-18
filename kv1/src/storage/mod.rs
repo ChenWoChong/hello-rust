@@ -7,7 +7,10 @@ pub use memory::MemTable;
 pub trait Storage {
     fn get(&self, table: &str, key: &str) -> Result<Option<Value>, KvError>;
 
-    fn mget(&self, table: &str, keys: Vec<&str>) -> Result<Vec<Kvpair>, KvError>;
+    fn mget<T, K>(&self, table: &str, keys: T) -> Result<Vec<Kvpair>, KvError>
+    where
+        K: Into<String>,
+        T: IntoIterator<Item = K>;
 
     fn set(&self, table: &str, key: String, value: Value) -> Result<Option<Value>, KvError>;
 

@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
         "table1",
         "hello",
         Value {
-            value: Some(kv1::value::Value::String("world3".into())),
+            value: Some(kv1::value::Value::String("world".into())),
         },
     );
 
@@ -83,6 +83,56 @@ async fn main() -> Result<()> {
     client.send(cmd).await?;
 
     // 5. 等待并接收响应 (使用 StreamExt trait 提供的 .next() 方法)
+    if let Some(Ok(data)) = client.next().await {
+        info!("Got response {:#?}", data);
+    }
+
+    let cmd = CommandRequest::new_hset(
+        "table1",
+        "hello",
+        Value {
+            value: Some(kv1::value::Value::String("world_new".into())),
+        },
+    );
+    info!("Sending command: {:?}", cmd);
+    client.send(cmd).await?;
+    if let Some(Ok(data)) = client.next().await {
+        info!("Got response {:#?}", data);
+    }
+
+    let cmd = CommandRequest::new_hset(
+        "table1",
+        "hello1",
+        Value {
+            value: Some(kv1::value::Value::String("world1".into())),
+        },
+    );
+    info!("Sending command: {:?}", cmd);
+    client.send(cmd).await?;
+    if let Some(Ok(data)) = client.next().await {
+        info!("Got response {:#?}", data);
+    }
+
+    let cmd = CommandRequest::new_hset(
+        "table1",
+        "hello2",
+        Value {
+            value: Some(kv1::value::Value::String("world2".into())),
+        },
+    );
+    info!("Sending command: {:?}", cmd);
+    client.send(cmd).await?;
+    if let Some(Ok(data)) = client.next().await {
+        info!("Got response {:#?}", data);
+    }
+
+    // h_m_get
+    let cmd = CommandRequest::new_hmget(
+        "table1",
+        ["hello", "hello1", "hello2"],
+    );
+    info!("Sending command: {:?}", cmd);
+    client.send(cmd).await?;
     if let Some(Ok(data)) = client.next().await {
         info!("Got response {:#?}", data);
     }

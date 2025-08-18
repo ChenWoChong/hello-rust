@@ -1,7 +1,7 @@
 use crate::command_request::RequestData;
 #[allow(unused_imports)]
 use crate::{
-    CommandRequest, CommandResponse, CommandService, Hget, Hgetall, Hset, KvError, Kvpair,
+    CommandRequest, CommandResponse, CommandService, Hget, Hgetall, Hmget, Hset, KvError, Kvpair,
     MemTable, Storage, Value,
 };
 use std::sync::Arc;
@@ -12,6 +12,15 @@ impl CommandService for Hget {
         match store.get(&self.table, &self.key) {
             Ok(Some(v)) => v.into(),
             Ok(None) => KvError::NotFound(self.table, self.key).into(),
+            Err(e) => e.into(),
+        }
+    }
+}
+
+impl CommandService for Hmget {
+    fn execute(self, store: &impl Storage) -> CommandResponse {
+        match store.mget(&self.table, &self.keys) {
+            Ok(v) => v.into(),
             Err(e) => e.into(),
         }
     }
@@ -68,6 +77,18 @@ mod tests {
     }
 
     #[test]
+    fn h_m_get_should_work() {
+        let store = MemTable::new();
+        let cmd = CommandRequest::new_hset("score", "u1", 10.into());
+        dispatch(cmd, &store);
+        let cmd = CommandRequest::new_hset("score", "u2", 20.into());
+        dispatch(cmd, &store);
+
+        let cmd = CommandRequest::new_hmget("score", vec!["u1", "u2"]);
+        dispatch(cmd, &store);
+    }
+
+    #[test]
     fn h_get_with_non_exist_key_should_return_404() {
         let store = MemTable::new();
         let cmd = CommandRequest::new_hget("score", "u1");
@@ -103,6 +124,7 @@ mod tests {
             RequestData::Hget(v) => v.execute(store),
             RequestData::Hgetall(v) => v.execute(store),
             RequestData::Hset(v) => v.execute(store),
+            RequestData::Hmget(v) => v.execute(store),
             _ => todo!(),
         }
     }
@@ -142,6 +164,7 @@ impl<Store: Storage> Service<Store> {
 pub fn dispatch(cmd: CommandRequest, store: &impl Storage) -> CommandResponse {
     match cmd.request_data {
         Some(RequestData::Hget(param)) => param.execute(store),
+        Some(RequestData::Hmget(param)) => param.execute(store),
         Some(RequestData::Hgetall(param)) => param.execute(store),
         Some(RequestData::Hset(param)) => param.execute(store),
         None => KvError::InvalidCommand("Request has no data".into()).into(),
