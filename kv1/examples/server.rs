@@ -8,7 +8,7 @@ use tokio_util::codec::{Decoder, Encoder, Framed}; // 核心工具
 use tracing::info;
 
 // 假设这是你的 protobuf 结构体
-use kv1::{CommandRequest, CommandResponse, Kvpair};
+use kv1::{CommandRequest, CommandResponse, MemTable, Service};
 
 // --- 步骤 1: 创建你自己的编解码器 ---
 pub struct ProstCodec<In, Out> {
@@ -65,25 +65,29 @@ impl Encoder<CommandResponse> for ProstCodec<CommandRequest, CommandResponse> {
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
+
+    let service: Service = Service::new(MemTable::new());
+
     let addr = "127.0.0.1:9527";
     let listener = TcpListener::bind(addr).await?;
     info!("Start listening on {}", addr);
     loop {
         let (stream, addr) = listener.accept().await?;
         info!("Client {:?} connected", addr);
+
+        let svc = service.clone();
+
         tokio::spawn(async move {
             // --- 步骤 2: 将 stream 和 codec 包装成 Framed 对象 ---
             let mut framed =
                 Framed::new(stream, ProstCodec::<CommandRequest, CommandResponse>::new());
 
             // --- 步骤 3: 现在 framed 就是一个标准的 Stream + Sink, 可以直接使用 .next() 和 .send() ---
-            while let Some(Ok(msg)) = framed.next().await {
-                info!("Got a command: {:?}", msg);
-                let mut resp = CommandResponse::default();
-                resp.status = 404;
-                resp.message = "Not found".to_string();
-                resp.pairs = vec![Kvpair::new("chen", "wochong".into())];
-                resp.values = vec!["not".into(), "found".into()];
+            while let Some(Ok(cmd)) = framed.next().await {
+                info!("Got a command: {:?}", cmd);
+
+                let resp = svc.execute(cmd);
+
                 if let Err(e) = framed.send(resp).await {
                     info!("Failed to send response: {:?}", e);
                 }

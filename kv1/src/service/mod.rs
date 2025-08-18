@@ -1,6 +1,7 @@
 mod command_service;
 
 use crate::*;
+pub use command_service::Service;
 
 pub trait CommandService {
     fn execute(self, store: &impl Storage) -> CommandResponse;
@@ -29,4 +30,3 @@ mod tests {
         assert_res_ok(res, &["v1".into()], &[]);
     }
 }
-

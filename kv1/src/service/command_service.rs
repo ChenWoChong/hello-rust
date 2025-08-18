@@ -1,4 +1,5 @@
 use crate::command_request::RequestData;
+#[allow(unused_imports)]
 use crate::{
     CommandRequest, CommandResponse, CommandService, Hget, Hgetall, Hset, KvError, Kvpair,
     MemTable, Storage, Value,
