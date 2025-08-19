@@ -35,6 +35,19 @@ impl CommandRequest {
         }
     }
 
+    pub fn new_hmdel<T, K>(table: impl Into<String>, keys: T) -> Self
+    where
+        K: Into<String>,
+        T: IntoIterator<Item = K>,
+    {
+        Self {
+            request_data: Some(RequestData::Hmdel(Hmdel {
+                table: table.into(),
+                keys: keys.into_iter().map(|v| v.into()).collect(),
+            })),
+        }
+    }
+
     pub fn new_hget(table: impl Into<String>, key: impl Into<String>) -> Self {
         Self {
             request_data: Some(RequestData::Hget(Hget {

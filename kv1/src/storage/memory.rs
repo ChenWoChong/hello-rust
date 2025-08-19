@@ -71,6 +71,18 @@ impl Storage for MemTable {
         Ok(table.remove(key).map(|(_k, v)| v))
     }
 
+    fn mdel<T, K>(&self, table: &str, keys: T) -> Result<bool, KvError>
+    where
+        K: Into<String>,
+        T: IntoIterator<Item = K>,
+    {
+        let table = self.get_or_create_table(table);
+        for key in keys {
+            table.remove(&key.into()).unwrap();
+        }
+        Ok(true)
+    }
+
     fn get_all(&self, table: &str) -> Result<Vec<Kvpair>, KvError> {
         let table = self.get_or_create_table(table);
         Ok(table

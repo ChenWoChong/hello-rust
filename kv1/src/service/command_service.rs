@@ -1,3 +1,4 @@
+use crate::Hmdel;
 use crate::command_request::RequestData;
 #[allow(unused_imports)]
 use crate::{
@@ -62,6 +63,15 @@ impl CommandService for Hdel {
         match store.del(&self.table, &self.key) {
             Ok(Some(v)) => v.into(),
             Ok(None) => Value::default().into(),
+            Err(e) => e.into(),
+        }
+    }
+}
+
+impl CommandService for Hmdel {
+    fn execute(self, store: &impl Storage) -> CommandResponse {
+        match store.mdel(&self.table, &self.keys) {
+            Ok(v) => v.into(),
             Err(e) => e.into(),
         }
     }
@@ -188,6 +198,7 @@ pub fn dispatch(cmd: CommandRequest, store: &impl Storage) -> CommandResponse {
         Some(RequestData::Hset(param)) => param.execute(store),
         Some(RequestData::Hmset(param)) => param.execute(store),
         Some(RequestData::Hdel(param)) => param.execute(store),
+        Some(RequestData::Hmdel(param)) => param.execute(store),
         None => KvError::InvalidCommand("Request has no data".into()).into(),
         _ => KvError::Internal("Not implemented".into()).into(),
     }

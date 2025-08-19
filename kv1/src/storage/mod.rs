@@ -20,6 +20,11 @@ pub trait Storage {
 
     fn del(&self, table: &str, key: &str) -> Result<Option<Value>, KvError>;
 
+    fn mdel<T, K>(&self, table: &str, keys: T) -> Result<bool, KvError>
+    where
+        K: Into<String>,
+        T: IntoIterator<Item = K>;
+
     fn get_all(&self, table: &str) -> Result<Vec<Kvpair>, KvError>;
 
     fn get_iter(&self, table: &str) -> Result<Box<dyn Iterator<Item = Kvpair>>, KvError>;
@@ -52,6 +57,12 @@ mod tests {
     fn mem_table_m_set_should_work() {
         let store = MemTable::new();
         test_m_set(store);
+    }
+
+    #[test]
+    fn mem_table_m_del_should_work() {
+        let store = MemTable::new();
+        test_m_del(store);
     }
 
     // #[test]
@@ -162,6 +173,36 @@ mod tests {
                 Kvpair::new("k1", "v1".into()),
                 Kvpair::new("k2", "v2".into()),
                 Kvpair::new("k3", "v3".into()),
+            ]
+        );
+    }
+
+    fn test_m_del(store: impl Storage) {
+        store
+            .mset(
+                "t1",
+                vec![
+                    Kvpair::new("k1", "v1".into()),
+                    Kvpair::new("k2", "v2".into()),
+                    Kvpair::new("k3", "v3".into()),
+                    Kvpair::new("k4", "v4".into()),
+                    Kvpair::new("k5", "v5".into()),
+                ],
+            )
+            .unwrap();
+
+        store.mdel("t1", ["k1", "k2"]).unwrap();
+
+        let mut data = store
+            .mget("t1", vec!["k1", "k2", "k3", "k4", "k5"])
+            .unwrap();
+        data.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        assert_eq!(
+            data,
+            vec![
+                Kvpair::new("k3", "v3".into()),
+                Kvpair::new("k4", "v4".into()),
+                Kvpair::new("k5", "v5".into()),
             ]
         );
     }
