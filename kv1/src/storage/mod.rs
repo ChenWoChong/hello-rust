@@ -65,11 +65,11 @@ mod tests {
         test_m_del(store);
     }
 
-    // #[test]
-    // fn mem_table_get_iter_should_work() {
-    //     let store = MemTable::new();
-    //     test_get_iter(store);
-    // }
+    #[test]
+    fn mem_table_get_iter_should_work() {
+        let store = MemTable::new();
+        test_get_iter(store);
+    }
 
     fn test_basic_interface(store: impl Storage) {
         let v = store.set("t1", "hello".into(), "world".into());
@@ -96,7 +96,6 @@ mod tests {
         assert_eq!(Ok(None), store.del("t2", "hello"));
     }
 
-    #[allow(dead_code)]
     fn test_get_iter(store: impl Storage) {
         store.set("t2", "k1".into(), "v1".into()).unwrap();
         store.set("t2", "k2".into(), "v2".into()).unwrap();

@@ -93,9 +93,14 @@ impl Storage for MemTable {
 
     fn get_iter(&self, table: &str) -> Result<Box<dyn Iterator<Item = Kvpair>>, KvError> {
         // 查询出 dashMap
-        let _table = self.get_or_create_table(table);
+        let table = self.get_or_create_table(table);
 
         // 返回迭代器
-        todo!()
+        let res = table
+            .iter()
+            .map(|v| Kvpair::new(v.key(), v.value().clone()))
+            .collect::<Vec<_>>();
+
+        Ok(Box::new(res.into_iter()))
     }
 }
