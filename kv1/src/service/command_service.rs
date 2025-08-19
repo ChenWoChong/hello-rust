@@ -1,9 +1,8 @@
-use crate::Hmdel;
 use crate::command_request::RequestData;
 #[allow(unused_imports)]
 use crate::{
-    CommandRequest, CommandResponse, CommandService, Hdel, Hget, Hgetall, Hmget, Hmset, Hset,
-    KvError, Kvpair, MemTable, Storage, Value,
+    CommandRequest, CommandResponse, CommandService, Hdel, Hexist, Hget, Hgetall, Hmdel, Hmget,
+    Hmset, Hset, KvError, Kvpair, MemTable, Storage, Value,
 };
 use std::sync::Arc;
 use tracing::debug;
@@ -13,6 +12,15 @@ impl CommandService for Hget {
         match store.get(&self.table, &self.key) {
             Ok(Some(v)) => v.into(),
             Ok(None) => KvError::NotFound(self.table, self.key).into(),
+            Err(e) => e.into(),
+        }
+    }
+}
+
+impl CommandService for Hexist {
+    fn execute(self, store: &impl Storage) -> CommandResponse {
+        match store.contains(&self.table, &self.key) {
+            Ok(v) => v.into(),
             Err(e) => e.into(),
         }
     }
@@ -193,6 +201,7 @@ impl<Store: Storage> Service<Store> {
 pub fn dispatch(cmd: CommandRequest, store: &impl Storage) -> CommandResponse {
     match cmd.request_data {
         Some(RequestData::Hget(param)) => param.execute(store),
+        Some(RequestData::Hexist(param)) => param.execute(store),
         Some(RequestData::Hmget(param)) => param.execute(store),
         Some(RequestData::Hgetall(param)) => param.execute(store),
         Some(RequestData::Hset(param)) => param.execute(store),

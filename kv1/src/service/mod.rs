@@ -28,6 +28,12 @@ mod tests {
 
         let res = service.execute(CommandRequest::new_hget("t1", "k1"));
         assert_res_ok(res, &["v1".into()], &[]);
+
+        let res = service.execute(CommandRequest::new_hexist("t1", "k1"));
+        assert_res_ok(res, &[], &[]);
+
+        let res = service.execute(CommandRequest::new_hexist("t1", "k2"));
+        assert_res_error(res, 500, "Not Found");
     }
 
     #[test]

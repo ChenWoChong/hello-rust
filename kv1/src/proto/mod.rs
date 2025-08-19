@@ -57,6 +57,15 @@ impl CommandRequest {
         }
     }
 
+    pub fn new_hexist(table: impl Into<String>, key: impl Into<String>) -> Self {
+        Self {
+            request_data: Some(RequestData::Hexist(Hexist {
+                table: table.into(),
+                key: key.into(),
+            })),
+        }
+    }
+
     pub fn new_hmget<T, K>(table: impl Into<String>, keys: T) -> Self
     where
         K: Into<String>,
@@ -141,6 +150,7 @@ impl From<bool> for CommandResponse {
             },
             false => Self {
                 status: StatusCode::INTERNAL_SERVER_ERROR.as_u16() as _,
+                message: "Not Found".into(),
                 ..Default::default()
             },
         }
