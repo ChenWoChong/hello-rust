@@ -1,5 +1,7 @@
 use anyhow::Result;
-use clap::Parser;
+use clap::{Parser, arg};
+use colored::*;
+use regex::Regex;
 use std::fs::File;
 use std::io::{BufRead, BufReader, stdin};
 
@@ -29,13 +31,29 @@ fn main() -> Result<()> {
         Box::new(BufReader::new(file))
     };
 
-    for (num, line) in reader.lines().enumerate() {
+    for (line_num, line) in reader.lines().enumerate() {
         let line = line?;
-        println!("line {}: {}",num+1, line);
+        highlight_matches(line_num, line.as_str(), args.pattern.as_str())?;
+    }
+    Ok(())
+}
+
+fn highlight_matches(line_num: usize, line: &str, pattern: &str) -> Result<()> {
+    let re = Regex::new(pattern)?;
+
+    if re.find(line).is_none() {
+        return Ok(());
     }
 
-    // save to file
+    let mut last_end = 0;
 
-    //return
-    todo!()
+    print!("{}", format!("line {} :\t", line_num).yellow());
+    for mat in re.find_iter(line) {
+        print!("{}", &line[last_end..mat.start()]);
+        print!("{}", mat.as_str().red().bold());
+        last_end = mat.end();
+    }
+    println!("{}", &line[last_end..]);
+
+    Ok(())
 }
