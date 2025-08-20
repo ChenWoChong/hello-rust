@@ -1,9 +1,12 @@
 use anyhow::Result;
-use clap::{Parser, arg};
+use clap::Parser;
 use colored::*;
+use glob::glob;
+use rayon::prelude::*;
 use regex::Regex;
 use std::fs::File;
-use std::io::{BufRead, BufReader, stdin};
+use std::io::{BufRead, BufReader};
+use std::path::{Path, PathBuf};
 
 mod error;
 mod parse;
@@ -15,39 +18,60 @@ struct CliArgs {
     pattern: String,
 
     /// 要搜索的文件路径。使用 "-" 代表从标准输入 (stdin) 读取。
-    path: String,
+    #[arg(required = true)]
+    paths: Vec<String>,
 }
 
 fn main() -> Result<()> {
     // parse cmd
     let args = CliArgs::parse();
-    println!("pattern: {}, path: {}", args.pattern, args.path);
+    println!("pattern: {}, path: {:?}", args.pattern, args.paths);
+    let mut paths: Vec<PathBuf> = Vec::new();
+    for path_pattern in &args.paths {
+        match glob(path_pattern) {
+            Ok(path_iter) => {
+                // 将 glob 返回的迭代器中的有效路径，添加到总列表中
+                for entry in path_iter {
+                    if let Ok(path) = entry {
+                        paths.push(path);
+                    } else if let Err(e) = entry {
+                        eprintln!("错误: 处理通配符条目时出错: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("错误: 无效的通配符模式 '{}': {}", path_pattern, e);
+            }
+        }
+    }
 
-    // read content
-    let reader: Box<dyn BufRead> = if args.path == "-" {
-        Box::new(BufReader::new(stdin()))
-    } else {
-        let file = File::open(&args.path)?;
-        Box::new(BufReader::new(file))
-    };
+    paths.par_iter().for_each(|path| {
+        if let Err(e) = process_file(path, &args.pattern) {
+            eprintln!("Error processing file {}: {}", path.display(), e);
+        }
+    });
+
+    Ok(())
+}
+
+fn process_file(path: &Path, pattern: &str) -> Result<()> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let re = Regex::new(pattern)?;
 
     for (line_num, line) in reader.lines().enumerate() {
         let line = line?;
-        highlight_matches(line_num, line.as_str(), args.pattern.as_str())?;
+        if let Some(_) = re.find(&line) {
+            highlight_matches(path, line_num, line.as_str(), &re)?;
+        }
     }
     Ok(())
 }
 
-fn highlight_matches(line_num: usize, line: &str, pattern: &str) -> Result<()> {
-    let re = Regex::new(pattern)?;
-
-    if re.find(line).is_none() {
-        return Ok(());
-    }
-
+fn highlight_matches(path: &Path, line_num: usize, line: &str, re: &Regex) -> Result<()> {
+    print!("{}:{}:\t", path.display(), line_num);
     let mut last_end = 0;
 
-    print!("{}", format!("line {} :\t", line_num).yellow());
     for mat in re.find_iter(line) {
         print!("{}", &line[last_end..mat.start()]);
         print!("{}", mat.as_str().red().bold());
