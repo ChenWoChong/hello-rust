@@ -32,38 +32,43 @@ fn main() -> Result<()> {
         let reader = BufReader::new(io::stdin());
         process_stream(reader, &args.pattern)?;
     } else {
-        let mut paths: Vec<PathBuf> = Vec::new();
-        for path_pattern in &args.paths {
-            match glob(path_pattern) {
-                Ok(path_iter) => {
-                    // 将 glob 返回的迭代器中的有效路径，添加到总列表中
-                    for entry in path_iter {
-                        if let Ok(path) = entry {
-                            paths.push(path);
-                        } else if let Err(e) = entry {
-                            eprintln!("错误: 处理通配符条目时出错: {}", e);
-                        }
+        process_path(&args.paths, args.pattern)?;
+    }
+    Ok(())
+}
+
+fn process_path(path_list: &Vec<String>, pattern: String) -> Result<()> {
+    let mut paths: Vec<PathBuf> = Vec::new();
+    for path_pattern in path_list {
+        match glob(path_pattern) {
+            Ok(path_iter) => {
+                // 将 glob 返回的迭代器中的有效路径，添加到总列表中
+                for entry in path_iter {
+                    if let Ok(path) = entry {
+                        paths.push(path);
+                    } else if let Err(e) = entry {
+                        eprintln!("错误: 处理通配符条目时出错: {}", e);
                     }
                 }
-                Err(e) => {
-                    eprintln!("错误: 无效的通配符模式 '{}': {}", path_pattern, e);
-                }
+            }
+            Err(e) => {
+                eprintln!("错误: 无效的通配符模式 '{}': {}", path_pattern, e);
             }
         }
-        let all_res = paths
-            .par_iter()
-            .map(|path| process_file(path, &args.pattern))
-            .collect::<Vec<_>>();
+    }
+    let all_res = paths
+        .par_iter()
+        .map(|path| process_file(path, &pattern))
+        .collect::<Vec<_>>();
 
-        for res_set in all_res {
-            match res_set {
-                Ok(res) => {
-                    for line in res {
-                        print!("{}", line);
-                    }
+    for res_set in all_res {
+        match res_set {
+            Ok(res) => {
+                for line in res {
+                    print!("{}", line);
                 }
-                Err(e) => return Err(e),
             }
+            Err(e) => return Err(e),
         }
     }
     Ok(())
@@ -92,7 +97,12 @@ fn process_file(path: &Path, pattern: &str) -> Result<Vec<String>> {
         let line = line?;
         if let Some(_) = re.find(&line) {
             let highlighted = highlight_matches(line.as_str(), &re)?;
-            res.push(format!("{}:{}:\t{}\n", path.display(), line_num, highlighted));
+            res.push(format!(
+                "{}:{}:\t{}\n",
+                path.display(),
+                line_num,
+                highlighted
+            ));
         }
     }
     Ok(res)
@@ -104,7 +114,7 @@ fn highlight_matches(line: &str, re: &Regex) -> Result<String> {
 
     for mat in re.find_iter(line) {
         highlight_line.push_str(&line[last_end..mat.start()]);
-        highlight_line.push_str(&mat.as_str().red().bold());
+        highlight_line.push_str(&mat.as_str().red().bold().to_string());
         last_end = mat.end();
     }
     highlight_line.push_str(&line[last_end..]);
