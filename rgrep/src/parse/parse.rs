@@ -1,10 +1,10 @@
 use crate::error::RgrepError;
 use crate::parse::{Args, Parse};
-use std::io::BufRead;
 
 pub struct Parser {}
 
 impl Parser {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {}
     }

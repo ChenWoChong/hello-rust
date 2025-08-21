@@ -1,15 +1,16 @@
 mod parse;
 
 use crate::error::RgrepError;
-pub use parse::Parser;
-use std::io;
 
 pub struct Args<'a> {
+    #[allow(dead_code)]
     key: &'a str,
+    #[allow(dead_code)]
     file_name: &'a str,
 }
 
 pub trait Parse {
+    #[allow(dead_code)]
     fn parse(&self) -> Result<Args, RgrepError>;
 }
 
