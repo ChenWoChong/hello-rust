@@ -76,6 +76,7 @@ fn process_path(path_list: &Vec<String>, pattern: String) -> Result<()> {
 
 fn process_stream(reader: impl BufRead, pattern: &str) -> Result<()> {
     let re = Regex::new(pattern)?;
+    print!("\n-------------- [{}] --------------\n\n", "StdIN");
     for (line_num, line) in reader.lines().enumerate() {
         let line = line?;
         if re.is_match(&line) {
@@ -91,7 +92,7 @@ fn process_file(path: &Path, pattern: &str) -> Result<Vec<String>> {
     let reader = BufReader::new(file);
     let re = Regex::new(pattern)?;
     let mut res = Vec::new();
-    res.push(format!("[{}]:\n\n", path.display()));
+    res.push(format!("\n-------------- [{}] --------------\n\n", path.display()));
 
     for (line_num, line) in reader.lines().enumerate() {
         let line = line?;
