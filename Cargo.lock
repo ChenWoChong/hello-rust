@@ -3487,6 +3487,7 @@ dependencies = [
  "clap",
  "colored",
  "glob",
+ "itertools 0.14.0",
  "rayon",
  "regex",
  "thiserror 2.0.15",
