@@ -30,6 +30,24 @@ pub trait Storage {
     fn get_iter(&self, table: &str) -> Result<Box<dyn Iterator<Item = Kvpair>>, KvError>;
 }
 
+// pub struct Service {
+//     pub store: Arc<Box<dyn Storage>>,
+// }
+// 
+// impl Service {
+//     pub fn new(s: Box<dyn Storage>) -> Self {
+//         Self { store: Arc::new(s) }
+//     }
+// }
+// 
+// impl Clone for Service {
+//     fn clone(&self) -> Self {
+//         Self {
+//             store: Arc::clone(&self.store),
+//         }
+//     }
+// }
+
 #[cfg(test)]
 mod tests {
     use super::*;
