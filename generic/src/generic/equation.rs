@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::marker::PhantomData;
 
 #[derive(Default, Debug)]
@@ -33,6 +34,18 @@ impl Iterator for Equation<Quadratic> {
     }
 }
 
+#[allow(dead_code)]
+pub fn consumer_iterator<F, Iter, T>(mut f: F)
+where
+    F: FnMut(i32) -> Iter,
+    Iter: Iterator<Item = T>,
+    T: Debug,
+{
+    for i in f(8) {
+        println!("print iterator item: {:?}", i);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -55,5 +68,11 @@ mod tests {
         assert_eq!(quadratic.next(), Some(9));
         assert_eq!(quadratic.next(), Some(16));
         assert_eq!(quadratic.next(), Some(25));
+    }
+
+    #[test]
+    fn test_consumer_iterator() {
+        let f = |i| (0..=i).into_iter();
+        consumer_iterator(f);
     }
 }
