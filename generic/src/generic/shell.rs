@@ -13,6 +13,7 @@ pub struct Shell<'a, 'b> {
 }
 
 impl<'a, 'b> Shell<'a, 'b> {
+    #[allow(dead_code)]
     pub fn new(cmd: &'a str, args: &'b [&'a str]) -> Self {
         Self { cmd, args }
     }
@@ -25,14 +26,17 @@ impl<'a, 'b> Executor for Shell<'a, 'b> {
     }
 }
 
+#[allow(dead_code)]
 pub fn execute_generics(cmd: &impl Executor) -> Result<Option<i32>, BoxedError> {
     cmd.run()
 }
 
+#[allow(dead_code)]
 pub fn execute_trait_object(cmd: &dyn Executor) -> Result<Option<i32>, BoxedError> {
     cmd.run()
 }
 
+#[allow(dead_code)]
 pub fn execute_boxed_trait_object(cmd: Box<dyn Executor>) -> Result<Option<i32>, BoxedError> {
     cmd.run()
 }

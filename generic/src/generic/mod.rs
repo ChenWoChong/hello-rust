@@ -1,4 +1,7 @@
+mod equation;
 mod identifier;
 mod plan;
-mod equation;
 mod shell;
+
+#[allow(unused_imports)]
+pub use shell::*;

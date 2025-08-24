@@ -11,15 +11,19 @@ pub struct Consumer<T> {
 }
 
 pub trait Free {
+    #[allow(dead_code)]
     fn feature1(&self);
+    #[allow(dead_code)]
     fn feature2(&self);
 }
 
 pub trait Personal: Free {
+    #[allow(dead_code)]
     fn advance_feature(&self);
 }
 
 pub struct FreePlan;
+#[allow(dead_code)]
 pub struct PersonalPlan(f32);
 
 impl<T> Free for Consumer<T> {
@@ -57,6 +61,7 @@ impl Personal for Consumer<PersonalPlan> {
     }
 }
 
+#[allow(dead_code)]
 pub fn subscribe(consumer: Consumer<FreePlan>, payment: f32) -> Consumer<PersonalPlan> {
     let plan = PersonalPlan(payment);
     println!(
