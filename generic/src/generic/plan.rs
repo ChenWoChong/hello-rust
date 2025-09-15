@@ -46,18 +46,18 @@ impl<T> Consumer<T> {
     }
 }
 
-impl From<Consumer<FreePlan>> for Consumer<PersonalPlan> {
-    fn from(value: Consumer<FreePlan>) -> Self {
-        Self::new(value.name)
-    }
-}
-
 impl Personal for Consumer<PersonalPlan> {
     fn advance_feature(&self) {
         println!(
             "Dear {}(as our valuable customer {}), enjoy this advanced feature!",
             self.name, self.id
         );
+    }
+}
+
+impl From<Consumer<FreePlan>> for Consumer<PersonalPlan> {
+    fn from(value: Consumer<FreePlan>) -> Self {
+        Self::new(value.name)
     }
 }
 
