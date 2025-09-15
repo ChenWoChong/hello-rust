@@ -1,5 +1,7 @@
-use crate::test2::infrastructure::{Charger, EmailSender};
+use std::sync::atomic::Ordering::SeqCst;
+use crate::test2::infrastructure::{Charger, EmailSender, StripeGateway};
 use anyhow::{Result, anyhow};
+use crate::test2::PaymentMethod::{CreditCard as OtherCreditCard, PayPal as OtherPayPal};
 
 // --- 模拟的底层设施 ---
 mod infrastructure {
@@ -7,6 +9,7 @@ mod infrastructure {
         fn charge(&self, amount: f64, card_token: &str) -> bool;
     }
     // 一个非常具体的支付网关
+    #[derive(Default)]
     pub struct StripeGateway;
     impl Charger for StripeGateway {
         fn charge(&self, amount: f64, card_token: &str) -> bool {
@@ -63,11 +66,90 @@ pub fn calculate_price(raw_price: f64, price_calculator: &dyn TierPriceCalculato
     price_calculator.calculate_price(raw_price)
 }
 
-#[derive(Debug)]
 pub enum PaymentMethod {
-    CreditCard { token: String },
-    PayPal { email: String },
+    CreditCard,
+    PayPal
 }
+
+pub trait Payment {
+    fn pay(&self, price: f64) -> bool;
+}
+
+pub struct CreditCard {
+    token: String,
+    strip: Box<dyn Charger>,
+}
+
+impl CreditCard {
+    pub fn new(token: String, strip: Box<dyn Charger>) -> Self {
+        Self{
+            token,
+            strip,
+        }
+    }
+}
+
+impl Payment for CreditCard {
+    fn pay(&self, price: f64) -> bool {
+        self.strip.charge(price, &self.token)
+    }
+}
+
+pub struct PayPalPay {
+    email: String,
+}
+
+impl PayPalPay {
+    pub fn new(email: String) -> Self{
+        Self{
+            email,
+        }
+    }
+}
+
+impl Payment for PayPalPay {
+    fn pay(&self, final_price: f64) -> bool {
+        // 如果要支持 PayPal，就得在这里加代码，可能还需要新的依赖
+        println!(
+            "（未实现）通过 PayPal 向 {} 收费 ${:.2}",
+            self.email, final_price
+        );
+        true // 假设成功
+    }
+}
+
+
+pub struct OrderPayment<'a>{
+    pub payment: &'a dyn Payment
+}
+
+impl OrderPayment {
+
+    pub fn new(order: &Order) -> Self{
+        match order.payment_method {
+            PaymentMethod::CreditCard => {
+                let strip = StripeGateway;
+                let payment = CreditCard::new(order.customer_email, Box::new(strip));
+                Self{
+                payment: &payment,
+                }
+            }
+            PaymentMethod::PayPal => {
+                let paypal = PayPalPay::new(order.customer_email);
+                Self{
+                    payment: &paypal,
+                }
+            }
+        }
+    }
+
+    pub fn order_payment(&self, final_price: f64) -> bool {
+        self.payment.pay(final_price)
+    }
+}
+
+
+
 
 pub struct Order<'a> {
     pub customer_tier: &'a dyn TierPriceCalculator,
@@ -78,16 +160,14 @@ pub struct Order<'a> {
 }
 
 // --- 违反 SOLID 的“上帝”对象 ---
-pub struct OrderProcessor<'a, 'b> {
+pub struct OrderProcessor<'b> {
     // 罪状一：直接依赖底层具体实现 (违反 DIP)
-    stripe: &'a dyn Charger,
     smtp_client: &'b dyn EmailSender,
 }
 
-impl<'a, 'b> OrderProcessor<'a, 'b> {
-    pub fn new(charger: &'a dyn Charger, email_sender: &'b dyn EmailSender) -> Self {
+impl<'b> OrderProcessor<'b> {
+    pub fn new(email_sender: &'b dyn EmailSender) -> Self {
         Self {
-            stripe: charger,
             smtp_client: email_sender,
         }
     }
@@ -96,22 +176,6 @@ impl<'a, 'b> OrderProcessor<'a, 'b> {
         calculate_price(order.total_price, order.customer_tier)
     }
 
-    pub fn order_payment(&self, order: &Order, final_price: f64) -> bool {
-        // --- 职责2: 支付处理 ---
-        let payment_successful = match &order.payment_method {
-            // 罪状四：每增加一种支付方式，都必须修改这里的代码 (违反 OCP)
-            PaymentMethod::CreditCard { token } => self.stripe.charge(final_price, token),
-            PaymentMethod::PayPal { email } => {
-                // 如果要支持 PayPal，就得在这里加代码，可能还需要新的依赖
-                println!(
-                    "（未实现）通过 PayPal 向 {} 收费 ${:.2}",
-                    email, final_price
-                );
-                true // 假设成功
-            }
-        };
-        payment_successful
-    }
 
     /// 罪状二：一个方法承担了所有职责：验证、计价、支付、库存、通知... (严重违反 SRP)
     pub fn process(&self, order: &Order) -> Result<()> {
