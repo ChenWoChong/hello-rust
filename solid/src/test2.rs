@@ -1,10 +1,9 @@
-use std::sync::atomic::Ordering::SeqCst;
-use crate::test2::infrastructure::{Charger, EmailSender, StripeGateway};
+use crate::test2::infrastructure::{Charger, EmailSender, SmtpClient, StripeGateway};
 use anyhow::{Result, anyhow};
-use crate::test2::PaymentMethod::{CreditCard as OtherCreditCard, PayPal as OtherPayPal};
 
 // --- 模拟的底层设施 ---
-mod infrastructure {
+pub mod infrastructure {
+    // 一个非常具体的支付网关
     pub trait Charger {
         fn charge(&self, amount: f64, card_token: &str) -> bool;
     }
@@ -39,75 +38,98 @@ mod infrastructure {
 // --- 领域模型 ---
 #[derive(Debug)]
 pub enum CustomerTier {
-    Regular(Regular),
-    Premium(Premium),
+    Regular,
+    Premium,
+}
+
+impl CustomerTier {
+    pub fn get_tier_price_calculator(&self) -> &dyn TierPriceCalculator {
+        match self {
+            CustomerTier::Regular => &RegularTier,
+            CustomerTier::Premium => &PremiumTier,
+        }
+    }
 }
 
 pub trait TierPriceCalculator {
     fn calculate_price(&self, raw_price: f64) -> f64;
 }
 
-#[derive(Debug)]
-pub struct Regular;
-impl TierPriceCalculator for Regular {
+pub struct RegularTier;
+impl TierPriceCalculator for RegularTier {
     fn calculate_price(&self, raw_price: f64) -> f64 {
         raw_price
     }
 }
-#[derive(Debug)]
-pub struct Premium;
-impl TierPriceCalculator for Premium {
+
+pub struct PremiumTier;
+impl TierPriceCalculator for PremiumTier {
     fn calculate_price(&self, raw_price: f64) -> f64 {
         raw_price * 0.8
     }
 }
 
-pub fn calculate_price(raw_price: f64, price_calculator: &dyn TierPriceCalculator) -> f64 {
-    price_calculator.calculate_price(raw_price)
+#[derive(Debug)]
+pub enum PaymentMethod {
+    CreditCard { token: String },
+    PayPal { email: String },
 }
 
-pub enum PaymentMethod {
-    CreditCard,
-    PayPal
-}
+// pub struct OrderPayment<'a> {
+//     pub payment: &'a dyn Payment,
+// }
 
 pub trait Payment {
     fn pay(&self, price: f64) -> bool;
 }
 
-pub struct CreditCard {
+// pub fn new_payment<'a>(order: &Order, charger: &'a dyn Charger) -> Box<dyn Payment> {
+//     match &order.payment_method {
+//         PaymentMethod::CreditCard { token } => {
+//             Box::new(CreditCardPayment::new(token.into(), charger))
+//         }
+//         PaymentMethod::PayPal { email } => Box::new(PayPalPayment::new(email.into())),
+//     }
+// }
+
+// impl<'a> OrderPayment<'a> {
+//     pub fn new(payment: &'a dyn Payment) -> Self {
+//         Self { payment }
+//     }
+//
+//     fn pay(&self, price: f64) -> bool {
+//         self.payment.pay(price)
+//     }
+// }
+
+pub struct CreditCardPayment<'a> {
     token: String,
-    strip: Box<dyn Charger>,
+    charger: &'a dyn Charger,
 }
 
-impl CreditCard {
-    pub fn new(token: String, strip: Box<dyn Charger>) -> Self {
-        Self{
-            token,
-            strip,
-        }
+impl<'a> CreditCardPayment<'a> {
+    pub fn new(token: String, charger: &'a dyn Charger) -> Self {
+        Self { token, charger }
     }
 }
 
-impl Payment for CreditCard {
+impl<'a> Payment for CreditCardPayment<'a> {
     fn pay(&self, price: f64) -> bool {
-        self.strip.charge(price, &self.token)
+        self.charger.charge(price, &self.token)
     }
 }
 
-pub struct PayPalPay {
+pub struct PayPalPayment {
     email: String,
 }
 
-impl PayPalPay {
-    pub fn new(email: String) -> Self{
-        Self{
-            email,
-        }
+impl PayPalPayment {
+    pub fn new(email: String) -> Self {
+        Self { email }
     }
 }
 
-impl Payment for PayPalPay {
+impl Payment for PayPalPayment {
     fn pay(&self, final_price: f64) -> bool {
         // 如果要支持 PayPal，就得在这里加代码，可能还需要新的依赖
         println!(
@@ -118,41 +140,9 @@ impl Payment for PayPalPay {
     }
 }
 
-
-pub struct OrderPayment<'a>{
-    pub payment: &'a dyn Payment
-}
-
-impl OrderPayment {
-
-    pub fn new(order: &Order) -> Self{
-        match order.payment_method {
-            PaymentMethod::CreditCard => {
-                let strip = StripeGateway;
-                let payment = CreditCard::new(order.customer_email, Box::new(strip));
-                Self{
-                payment: &payment,
-                }
-            }
-            PaymentMethod::PayPal => {
-                let paypal = PayPalPay::new(order.customer_email);
-                Self{
-                    payment: &paypal,
-                }
-            }
-        }
-    }
-
-    pub fn order_payment(&self, final_price: f64) -> bool {
-        self.payment.pay(final_price)
-    }
-}
-
-
-
-
-pub struct Order<'a> {
-    pub customer_tier: &'a dyn TierPriceCalculator,
+#[derive(Debug)]
+pub struct Order {
+    pub customer_tier: CustomerTier,
     pub items: Vec<String>,
     pub total_price: f64,
     pub payment_method: PaymentMethod,
@@ -160,35 +150,75 @@ pub struct Order<'a> {
 }
 
 // --- 违反 SOLID 的“上帝”对象 ---
-pub struct OrderProcessor<'b> {
+pub struct OrderProcessor<'a, 'b, 'c> {
     // 罪状一：直接依赖底层具体实现 (违反 DIP)
-    smtp_client: &'b dyn EmailSender,
+    payment: &'a dyn Payment,
+    db: &'b dyn DBRepository,
+    smtp_client: &'c dyn EmailSender,
 }
 
-impl<'b> OrderProcessor<'b> {
-    pub fn new(email_sender: &'b dyn EmailSender) -> Self {
+pub trait DBRepository {
+    fn save(&self, order: &Order) -> Result<()>;
+}
+
+pub struct MysqlRepository {
+    pub host: String,
+    pub password: String,
+    pub ip: String,
+    pub port: i32,
+}
+
+impl MysqlRepository {
+    fn new(host: String, password: String, ip: String, port: i32) -> Self {
         Self {
-            smtp_client: email_sender,
+            host,
+            password,
+            ip,
+            port,
         }
     }
+}
 
-    pub fn calculate_price(&self, order: &Order) -> f64 {
-        calculate_price(order.total_price, order.customer_tier)
+impl DBRepository for MysqlRepository {
+    fn save(&self, order: &Order) -> Result<()> {
+        println!("save order to db {}", order.customer_email);
+        Ok(())
     }
+}
 
+impl<'a, 'b, 'c> OrderProcessor<'a, 'b, 'c> {
+    pub fn new(
+        payment: &'a dyn Payment,
+        db: &'b dyn DBRepository,
+        smtp_client: &'c dyn EmailSender,
+    ) -> Self {
+        Self {
+            payment,
+            db,
+            smtp_client,
+        }
+    }
 
     /// 罪状二：一个方法承担了所有职责：验证、计价、支付、库存、通知... (严重违反 SRP)
     pub fn process(&self, order: &Order) -> Result<()> {
         // --- 职责1: 价格计算 (包含业务规则) ---
-        let final_price = self.calculate_price(order);
+        let final_price = order
+            .customer_tier
+            .get_tier_price_calculator()
+            .calculate_price(order.total_price);
 
-        if !self.order_payment(order, final_price) {
+        // --- 职责2: 支付处理 ---
+        if !self.payment.pay(final_price) {
             return Err(anyhow!("支付失败"));
         }
         println!("支付成功！");
 
         // --- 职责3: 库存管理 (硬编码) ---
         println!("正在更新库存...(直接调用数据库)");
+
+        if let Err(e) = self.db.save(order) {
+            return Err(e);
+        }
 
         // --- 职责4: 发送通知 (硬编码) ---
         self.smtp_client.send_email(
@@ -204,7 +234,7 @@ impl<'b> OrderProcessor<'b> {
 // --- 使用示例 ---
 fn main() -> Result<()> {
     let order = Order {
-        customer_tier: &Premium,
+        customer_tier: CustomerTier::Premium,
         items: vec!["一本好书".to_string(), "一支好笔".to_string()],
         total_price: 100.0,
         payment_method: PaymentMethod::CreditCard {
@@ -213,7 +243,16 @@ fn main() -> Result<()> {
         customer_email: "disciple@example.com".to_string(),
     };
 
-    let processor = OrderProcessor::new();
+    let charger = StripeGateway::default();
+    let payment: &dyn Payment = match &order.payment_method {
+        PaymentMethod::CreditCard { token } => &CreditCardPayment::new(token.into(), &charger),
+        PaymentMethod::PayPal { email } => &PayPalPayment::new(email.into()),
+    };
+
+    let mysql_db = MysqlRepository::new("test".into(), "test".into(), "locahost".into(), 5432);
+    let smtp_client = SmtpClient;
+
+    let processor = OrderProcessor::new(payment, &mysql_db, &smtp_client);
     processor.process(&order)?;
 
     Ok(())
