@@ -1,11 +1,11 @@
 use crate::test3::infrastructrue::{CsvLoader, CsvSaver, RecordLoader, RecordSaver};
+use crate::test3::transfer::{RecordFilter, RecordLowercase, RecordTransfer};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use crate::test3::transfer::{RecordFilter, RecordLowercase, RecordTransfer};
 
 // --- 数据模型 ---
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 struct UserRecord {
     id: u32,
     name: String,
@@ -14,6 +14,64 @@ struct UserRecord {
     is_active: bool,
     // 从 CSV 读取时是字符串，希望能转成 u64 时间戳
     last_login: u64,
+}
+
+mod contracts {
+    use crate::test3::UserRecord;
+
+    pub trait DataSource {
+        fn load(&self) -> anyhow::Result<Box<dyn Iterator<Item = anyhow::Result<UserRecord>>>>;
+    }
+
+    pub trait Transform: Send + Sync {
+        fn transform(
+            &self,
+            stream: Box<dyn Iterator<Item = anyhow::Result<UserRecord>>>,
+        ) -> Box<dyn Iterator<Item = anyhow::Result<UserRecord>>>;
+    }
+
+    pub trait DataSink {
+        fn save(
+            &self,
+            stream: Box<dyn Iterator<Item = anyhow::Result<UserRecord>>>,
+        ) -> anyhow::Result<()>;
+    }
+}
+
+mod implementation {
+    use std::fs;
+    use crate::test3::UserRecord;
+    use crate::test3::contracts::DataSource;
+    use csv::ErrorKind::Seek;
+
+    pub struct CsvDataSource<'a> {
+        path: &'a str,
+    }
+    impl<'a> CsvDataSource<'a> {
+        pub fn new(path: &'a str) -> Self {
+            Self { path }
+        }
+    }
+
+    impl DataSource for CsvDataSource {
+        fn load(&self) -> anyhow::Result<Box<dyn Iterator<Item = anyhow::Result<UserRecord>>>> {
+            println!("正在从 CSV 文件 '{}' 读取数据...", self.path);
+            let raw_data = fs::read_to_string(self.path)?;
+            let mut reader = csv::Reader::from_reader(raw_data.as_bytes());
+
+            reader.deserialize().into_iter().map(|result| {
+                let record: UserRecord = result.into();
+                record
+            }).
+        }
+    }
+
+    pub struct JsonFileSink<'a> {
+        path: &'a str,
+    }
+
+    pub struct ActiveUserFilter;
+    pub struct EmailLowercaseTransform;
 }
 
 mod infrastructrue {
@@ -50,12 +108,11 @@ mod infrastructrue {
     }
 
     pub trait RecordSaver {
-        fn save(&self,path: &str, records: Vec<UserRecord>) -> anyhow::Result<()>;
+        fn save(&self, path: &str, records: Vec<UserRecord>) -> anyhow::Result<()>;
     }
     pub struct CsvSaver;
     impl RecordSaver for CsvSaver {
-        fn save(&self,path: &str, records: Vec<UserRecord>) -> anyhow::Result<()> {
-
+        fn save(&self, path: &str, records: Vec<UserRecord>) -> anyhow::Result<()> {
             let json_output = serde_json::to_string_pretty(&records)?;
             fs::write(path, json_output)?;
             Ok(())
@@ -99,8 +156,16 @@ pub struct DataPipeline<'a> {
 }
 
 impl<'a> DataPipeline<'a> {
-    pub fn new(loader: &'a dyn RecordLoader,saver: &'a dyn RecordSaver,transfers: &'a [&'a dyn RecordTransfer]) -> Self {
-        Self { loader, saver, transfers }
+    pub fn new(
+        loader: &'a dyn RecordLoader,
+        saver: &'a dyn RecordSaver,
+        transfers: &'a [&'a dyn RecordTransfer],
+    ) -> Self {
+        Self {
+            loader,
+            saver,
+            transfers,
+        }
     }
 
     pub fn load(&self, input_path: &str) -> Result<Vec<UserRecord>> {
@@ -115,8 +180,6 @@ impl<'a> DataPipeline<'a> {
         }
         res
     }
-
-
 
     /// 罪状一：一个方法包揽了 E、T、L 所有职责 (严重违反 SRP)
     pub fn process(&self, input_path: &str, output_path: &str) -> Result<()> {
@@ -151,7 +214,7 @@ fn main() -> Result<()> {
 
     let csv_loader = CsvLoader;
     let csv_saver = CsvSaver;
-    let transfer_list: Vec<&dyn RecordTransfer>  = vec![&RecordFilter, &RecordLowercase];
+    let transfer_list: Vec<&dyn RecordTransfer> = vec![&RecordFilter, &RecordLowercase];
     let pipeline = DataPipeline::new(&csv_loader, &csv_saver, &transfer_list);
 
     pipeline.process("users.csv", "active_users.json")?;
