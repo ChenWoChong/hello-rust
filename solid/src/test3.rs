@@ -1,3 +1,4 @@
+use crate::test3::infrastructrue::RecordLoader;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -14,28 +15,88 @@ struct UserRecord {
     last_login: u64,
 }
 
-// --- 违反 SOLID 的“万能”流水线 ---
-pub struct DataPipeline;
+mod infrastructrue {
+    use crate::test3::UserRecord;
+    use std::fs;
 
-impl DataPipeline {
-    pub fn new() -> Self {
-        Self
+    pub trait RecordLoader {
+        fn load(&self, path: &str) -> anyhow::Result<Vec<UserRecord>>;
+    }
+
+    pub struct CsvLoader;
+    impl RecordLoader for CsvLoader {
+        fn load(&self, path: &str) -> anyhow::Result<Vec<UserRecord>> {
+            println!("正在从 CSV 文件 '{}' 读取数据...", path);
+            let raw_data = fs::read_to_string(path)?;
+            let mut reader = csv::Reader::from_reader(raw_data.as_bytes());
+
+            let mut records = Vec::new();
+            for result in reader.deserialize() {
+                let record: UserRecord = result?;
+                records.push(record);
+            }
+            println!("成功读取 {} 条记录。", records.len());
+
+            Ok(records)
+        }
+    }
+
+    pub struct DBLoader;
+    impl RecordLoader for DBLoader {
+        fn load(&self, path: &str) -> anyhow::Result<Vec<UserRecord>> {
+            todo!()
+        }
+    }
+}
+
+mod transfer {
+    use crate::test3::UserRecord;
+
+    pub trait RecordTransfer {
+        fn transfer(records: Vec<UserRecord>) -> Vec<UserRecord>;
+    }
+
+    pub struct RecordFilter;
+    impl RecordTransfer for RecordFilter {
+        fn transfer(records: Vec<UserRecord>) -> Vec<UserRecord> {
+            records.into_iter().filter(|r| r.is_active).collect()
+        }
+    }
+
+    pub struct RecordLowercase;
+    impl RecordTransfer for RecordLowercase {
+        fn transfer(records: Vec<UserRecord>) -> Vec<UserRecord> {
+            records
+                .into_iter()
+                .map(|mut r| {
+                    r.email = r.email.to_lowercase();
+                    r
+                })
+                .collect()
+        }
+    }
+}
+
+// --- 违反 SOLID 的“万能”流水线 ---
+pub struct DataPipeline<'a> {
+    loader: &'a dyn RecordLoader,
+}
+
+impl<'a> DataPipeline<'a> {
+    pub fn new(loader: &'a dyn RecordLoader) -> Self {
+        Self { loader }
+    }
+
+    pub fn load(&self, input_path: &str) -> Result<Vec<UserRecord>> {
+        println!("start to load from {}", input_path);
+        self.loader.load(input_path)
     }
 
     /// 罪状一：一个方法包揽了 E、T、L 所有职责 (严重违反 SRP)
     pub fn process(&self, input_path: &str, output_path: &str) -> Result<()> {
         // --- 环节一：Extract (抽取) ---
         // 罪状二：只能从本地文件系统读取，且焊死了 CSV 格式 (违反 DIP)
-        println!("正在从 CSV 文件 '{}' 读取数据...", input_path);
-        let raw_data = fs::read_to_string(input_path)?;
-        let mut reader = csv::Reader::from_reader(raw_data.as_bytes());
-
-        let mut records = Vec::new();
-        for result in reader.deserialize() {
-            let record: UserRecord = result?;
-            records.push(record);
-        }
-        println!("成功读取 {} 条记录。", records.len());
+        let records = self.load(input_path)?;
 
         // --- 环节二：Transform (转换) ---
         // 罪状三：所有的转换步骤和规则都硬编码在此处 (严重违反 OCP)
