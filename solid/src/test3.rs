@@ -1,4 +1,4 @@
-use crate::test3::infrastructrue::{CsvLoader, CsvSaver, RecordLoader, RecordSaver};
+use crate::test3::infrastructure::{CsvLoader, CsvSaver, RecordLoader, RecordSaver};
 use crate::test3::transfer::{RecordFilter, RecordLowercase, RecordTransfer};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -19,30 +19,32 @@ struct UserRecord {
 mod contracts {
     use crate::test3::UserRecord;
 
-    pub trait DataSource {
-        fn load(&self) -> anyhow::Result<Box<dyn Iterator<Item = anyhow::Result<UserRecord>>>>;
+    pub trait DataSource: Send + Sync {
+        fn load(
+            &self,
+        ) -> anyhow::Result<Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send>>;
     }
 
     pub trait Transform: Send + Sync {
-        fn transform(
-            &self,
-            stream: Box<dyn Iterator<Item = anyhow::Result<UserRecord>>>,
-        ) -> Box<dyn Iterator<Item = anyhow::Result<UserRecord>>>;
+        fn transform<'a>(
+            &'a self,
+            stream: Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send + 'a>,
+        ) -> Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send + 'a>;
     }
 
-    pub trait DataSink {
-        fn save(
-            &self,
-            stream: Box<dyn Iterator<Item = anyhow::Result<UserRecord>>>,
+    pub trait DataSink: Send + Sync {
+        fn save<'a>(
+            &'a self,
+            stream: Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send + 'a>,
         ) -> anyhow::Result<()>;
     }
 }
 
 mod implementation {
-    use std::fs;
     use crate::test3::UserRecord;
-    use crate::test3::contracts::DataSource;
-    use csv::ErrorKind::Seek;
+    use crate::test3::contracts::{DataSink, DataSource, Transform};
+    use anyhow::anyhow;
+    use std::fs;
 
     pub struct CsvDataSource<'a> {
         path: &'a str,
@@ -53,16 +55,22 @@ mod implementation {
         }
     }
 
-    impl DataSource for CsvDataSource {
-        fn load(&self) -> anyhow::Result<Box<dyn Iterator<Item = anyhow::Result<UserRecord>>>> {
+    impl<'a> DataSource for CsvDataSource<'a> {
+        fn load(
+            &self,
+        ) -> anyhow::Result<Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send>> {
             println!("正在从 CSV 文件 '{}' 读取数据...", self.path);
-            let raw_data = fs::read_to_string(self.path)?;
-            let mut reader = csv::Reader::from_reader(raw_data.as_bytes());
+            let file = fs::File::open(self.path)?;
+            let reader = csv::Reader::from_reader(file);
 
-            reader.deserialize().into_iter().map(|result| {
-                let record: UserRecord = result.into();
-                record
-            }).
+            // csv::Reader::deserialize 本身就返回一个迭代器
+            let iter = reader.into_deserialize().map(|res| {
+                // 将 csv::Error 转换为我们统一的 anyhow::Error
+                res.map_err(|e| anyhow!(e))
+            });
+
+            // 将迭代器装箱返回
+            Ok(Box::new(iter))
         }
     }
 
@@ -70,11 +78,134 @@ mod implementation {
         path: &'a str,
     }
 
+    impl<'a> JsonFileSink<'a> {
+        pub fn new(path: &'a str) -> Self {
+            Self { path }
+        }
+    }
+
+    impl<'a> DataSink for JsonFileSink<'a> {
+        fn save<'b>(
+            &'b self,
+            stream: Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send + 'b>,
+        ) -> anyhow::Result<()> {
+            println!("正在将结果写入 JSON 文件 '{}'...", self.path);
+            let records: Vec<UserRecord> = stream.collect::<anyhow::Result<Vec<_>>>()?;
+            let json_output = serde_json::to_string_pretty(&records)?;
+            fs::write(self.path, json_output)?;
+            Ok(())
+        }
+    }
+
     pub struct ActiveUserFilter;
+    impl Transform for ActiveUserFilter {
+        fn transform<'a>(
+            &'a self,
+            stream: Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send + 'a>,
+        ) -> Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send + 'a> {
+            println!("应用“活跃用户”过滤器...");
+            let transformed_stream = stream.filter(|res| match res {
+                Ok(record) => record.is_active,
+                Err(_) => true,
+            });
+            Box::new(transformed_stream)
+        }
+    }
     pub struct EmailLowercaseTransform;
+    impl Transform for EmailLowercaseTransform {
+        fn transform<'a>(
+            &'a self,
+            stream: Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send + 'a>,
+        ) -> Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send + 'a> {
+            println!("应用“邮箱小写”转换...");
+            let transformed_stream = stream.map(|res| {
+                res.map(|mut record| {
+                    record.email = record.email.to_lowercase();
+                    record
+                })
+            });
+            Box::new(transformed_stream)
+        }
+    }
+
+    pub struct NameAnonymizeTransform;
+    impl NameAnonymizeTransform {
+        fn anonymize(name: &str) -> String {
+            if name.is_empty() {
+                return "".to_string();
+            }
+            let first_char = name.chars().next().unwrap();
+            format!("{}***", first_char)
+        }
+    }
+
+    impl Transform for NameAnonymizeTransform {
+        fn transform<'a>(
+            &'a self,
+            stream: Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send + 'a>,
+        ) -> Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send + 'a> {
+            println!("应用“姓名匿名化”转换...");
+            let transformed_stream = stream.map(|res| {
+                res.map(|mut record| {
+                    record.name = Self::anonymize(&record.name);
+                    record
+                })
+            });
+            Box::new(transformed_stream)
+        }
+    }
 }
 
-mod infrastructrue {
+mod pipeline {
+    use crate::test3::UserRecord;
+    use crate::test3::contracts::{DataSink, DataSource, Transform};
+    use std::iter::FusedIterator;
+    use std::marker::PhantomData;
+
+    pub struct PipelineBuilder<'a> {
+        source: Option<&'a dyn DataSource>,
+        transforms: Vec<&'a (dyn Transform + 'a)>,
+        sink: Option<&'a dyn DataSink>,
+        _maker: PhantomData<&'a ()>,
+    }
+
+    impl<'a> PipelineBuilder<'a> {
+        pub fn new(source: &'a dyn DataSource) -> Self {
+            Self {
+                source: Some(source),
+                transforms: Vec::new(),
+                sink: None,
+                _maker: PhantomData,
+            }
+        }
+
+        pub fn add_transform(mut self, transform: &'a dyn Transform) -> Self {
+            self.transforms.push(transform);
+            self
+        }
+
+        pub fn with_sink(mut self, data_sink: &'a dyn DataSink) -> Self {
+            self.sink = Some(data_sink);
+            self
+        }
+
+        pub fn run(self) -> anyhow::Result<()> {
+            let mut stream: Box<dyn Iterator<Item = anyhow::Result<UserRecord>> + Send> =
+                self.source.unwrap().load()?;
+
+            for transform in self.transforms {
+                stream = transform.transform(stream);
+            }
+
+            let sink = self.sink.unwrap();
+            sink.save(stream)?;
+            println!("流水线处理完成！");
+            Ok(())
+        }
+    }
+}
+
+mod infrastructure {
     use crate::test3::UserRecord;
     use std::fs;
 
@@ -219,4 +350,47 @@ fn main() -> Result<()> {
 
     pipeline.process("users.csv", "active_users.json")?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test3::implementation::{
+        ActiveUserFilter, CsvDataSource, EmailLowercaseTransform, JsonFileSink,
+        NameAnonymizeTransform,
+    };
+    use crate::test3::pipeline;
+    use std::fs;
+
+    #[test]
+    fn pipeline_builder_should_work() -> anyhow::Result<()> {
+        // 准备一个临时的 CSV 文件
+        let csv_data = "id,name,email,is_active,last_login\n\
+                    1,Alice,Alice@EXAMPLE.COM,true,1678886400\n\
+                    2,Bob,bob@example.com,false,1678886401\n\
+                    3,Charlie,CHARLIE@EXAMPLE.COM,true,1678886402";
+        fs::write("users.csv", csv_data)?;
+
+        let csv_source = CsvDataSource::new("users.csv");
+        let json_sink = JsonFileSink::new("active_users.json");
+
+        let active_filter = ActiveUserFilter;
+        let email_lowercase = EmailLowercaseTransform;
+        let name_anonymizer = NameAnonymizeTransform;
+
+        println!("--- 流水线 1: 过滤 + 邮箱小写 ---");
+        pipeline::PipelineBuilder::new(&csv_source)
+            .add_transform(&active_filter)
+            .add_transform(&name_anonymizer)
+            .with_sink(&json_sink)
+            .run()?;
+
+        println!("\n--- 流水线 2: 过滤 + 姓名匿名化 ---");
+        pipeline::PipelineBuilder::new(&csv_source)
+            .add_transform(&active_filter)
+            .add_transform(&name_anonymizer)
+            .with_sink(&json_sink)
+            .run()?;
+
+        Ok(())
+    }
 }
