@@ -75,32 +75,24 @@ pub enum PaymentMethod {
     PayPal { email: String },
 }
 
-// pub struct OrderPayment<'a> {
-//     pub payment: &'a dyn Payment,
-// }
+pub struct OrderPayment;
+impl OrderPayment {
+    pub fn new_payment<'a>(
+        payment_method: &PaymentMethod,
+        charger: &'a dyn Charger,
+    ) -> Box<dyn Payment + 'a> {
+        match &payment_method {
+            PaymentMethod::CreditCard { token } => {
+                Box::new(CreditCardPayment::new(token.into(), charger))
+            }
+            PaymentMethod::PayPal { email } => Box::new(PayPalPayment::new(email.into())),
+        }
+    }
+}
 
 pub trait Payment {
     fn pay(&self, price: f64) -> bool;
 }
-
-// pub fn new_payment<'a>(order: &Order, charger: &'a dyn Charger) -> Box<dyn Payment> {
-//     match &order.payment_method {
-//         PaymentMethod::CreditCard { token } => {
-//             Box::new(CreditCardPayment::new(token.into(), charger))
-//         }
-//         PaymentMethod::PayPal { email } => Box::new(PayPalPayment::new(email.into())),
-//     }
-// }
-
-// impl<'a> OrderPayment<'a> {
-//     pub fn new(payment: &'a dyn Payment) -> Self {
-//         Self { payment }
-//     }
-//
-//     fn pay(&self, price: f64) -> bool {
-//         self.payment.pay(price)
-//     }
-// }
 
 pub struct CreditCardPayment<'a> {
     token: String,
@@ -140,7 +132,6 @@ impl Payment for PayPalPayment {
     }
 }
 
-#[derive(Debug)]
 pub struct Order {
     pub customer_tier: CustomerTier,
     pub items: Vec<String>,
@@ -244,15 +235,12 @@ fn main() -> Result<()> {
     };
 
     let charger = StripeGateway::default();
-    let payment: &dyn Payment = match &order.payment_method {
-        PaymentMethod::CreditCard { token } => &CreditCardPayment::new(token.into(), &charger),
-        PaymentMethod::PayPal { email } => &PayPalPayment::new(email.into()),
-    };
+    let payment = OrderPayment::new_payment(&order.payment_method, &charger);
 
     let mysql_db = MysqlRepository::new("test".into(), "test".into(), "locahost".into(), 5432);
     let smtp_client = SmtpClient;
 
-    let processor = OrderProcessor::new(payment, &mysql_db, &smtp_client);
+    let processor = OrderProcessor::new(payment.as_ref(), &mysql_db, &smtp_client);
     processor.process(&order)?;
 
     Ok(())
