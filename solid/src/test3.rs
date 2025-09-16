@@ -1,7 +1,8 @@
-use crate::test3::infrastructrue::RecordLoader;
+use crate::test3::infrastructrue::{CsvLoader, CsvSaver, RecordLoader, RecordSaver};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
+use crate::test3::transfer::{RecordFilter, RecordLowercase, RecordTransfer};
 
 // --- 数据模型 ---
 #[derive(Debug, Deserialize, Serialize)]
@@ -47,25 +48,38 @@ mod infrastructrue {
             todo!()
         }
     }
+
+    pub trait RecordSaver {
+        fn save(&self,path: &str, records: Vec<UserRecord>) -> anyhow::Result<()>;
+    }
+    pub struct CsvSaver;
+    impl RecordSaver for CsvSaver {
+        fn save(&self,path: &str, records: Vec<UserRecord>) -> anyhow::Result<()> {
+
+            let json_output = serde_json::to_string_pretty(&records)?;
+            fs::write(path, json_output)?;
+            Ok(())
+        }
+    }
 }
 
 mod transfer {
     use crate::test3::UserRecord;
 
     pub trait RecordTransfer {
-        fn transfer(records: Vec<UserRecord>) -> Vec<UserRecord>;
+        fn transfer(&self, records: Vec<UserRecord>) -> Vec<UserRecord>;
     }
 
     pub struct RecordFilter;
     impl RecordTransfer for RecordFilter {
-        fn transfer(records: Vec<UserRecord>) -> Vec<UserRecord> {
+        fn transfer(&self, records: Vec<UserRecord>) -> Vec<UserRecord> {
             records.into_iter().filter(|r| r.is_active).collect()
         }
     }
 
     pub struct RecordLowercase;
     impl RecordTransfer for RecordLowercase {
-        fn transfer(records: Vec<UserRecord>) -> Vec<UserRecord> {
+        fn transfer(&self, records: Vec<UserRecord>) -> Vec<UserRecord> {
             records
                 .into_iter()
                 .map(|mut r| {
@@ -80,17 +94,29 @@ mod transfer {
 // --- 违反 SOLID 的“万能”流水线 ---
 pub struct DataPipeline<'a> {
     loader: &'a dyn RecordLoader,
+    saver: &'a dyn RecordSaver,
+    transfers: &'a [&'a dyn RecordTransfer],
 }
 
 impl<'a> DataPipeline<'a> {
-    pub fn new(loader: &'a dyn RecordLoader) -> Self {
-        Self { loader }
+    pub fn new(loader: &'a dyn RecordLoader,saver: &'a dyn RecordSaver,transfers: &'a [&'a dyn RecordTransfer]) -> Self {
+        Self { loader, saver, transfers }
     }
 
     pub fn load(&self, input_path: &str) -> Result<Vec<UserRecord>> {
         println!("start to load from {}", input_path);
         self.loader.load(input_path)
     }
+
+    pub fn transfer(&self, records: Vec<UserRecord>) -> Vec<UserRecord> {
+        let mut res = records;
+        for &trans in self.transfers {
+            res = trans.transfer(res);
+        }
+        res
+    }
+
+
 
     /// 罪状一：一个方法包揽了 E、T、L 所有职责 (严重违反 SRP)
     pub fn process(&self, input_path: &str, output_path: &str) -> Result<()> {
@@ -101,25 +127,15 @@ impl<'a> DataPipeline<'a> {
         // --- 环节二：Transform (转换) ---
         // 罪状三：所有的转换步骤和规则都硬编码在此处 (严重违反 OCP)
         println!("开始进行数据转换...");
-        let transformed_records: Vec<UserRecord> = records
-            .into_iter()
-            // 规则1：过滤掉不活跃的用户
-            .filter(|r| r.is_active)
-            // 规则2：将所有邮箱地址转为小写
-            .map(|mut r| {
-                r.email = r.email.to_lowercase();
-                r
-            })
-            .collect();
+        let transformed_records: Vec<UserRecord> = self.transfer(records);
         println!("转换后剩余 {} 条记录。", transformed_records.len());
 
         // --- 环节三：Load (加载) ---
         // 罪状四：只能写入到本地文件系统，且焊死了 JSON 格式 (违反 DIP)
         println!("正在将结果写入 JSON 文件 '{}'...", output_path);
-        let json_output = serde_json::to_string_pretty(&transformed_records)?;
-        fs::write(output_path, json_output)?;
-
+        self.saver.save(output_path, transformed_records)?;
         println!("处理完成！");
+
         Ok(())
     }
 }
@@ -133,8 +149,11 @@ fn main() -> Result<()> {
                     3,Charlie,CHARLIE@EXAMPLE.COM,true,1678886402";
     fs::write("users.csv", csv_data)?;
 
-    let pipeline = DataPipeline::new();
-    pipeline.process("users.csv", "active_users.json")?;
+    let csv_loader = CsvLoader;
+    let csv_saver = CsvSaver;
+    let transfer_list: Vec<&dyn RecordTransfer>  = vec![&RecordFilter, &RecordLowercase];
+    let pipeline = DataPipeline::new(&csv_loader, &csv_saver, &transfer_list);
 
+    pipeline.process("users.csv", "active_users.json")?;
     Ok(())
 }
