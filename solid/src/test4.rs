@@ -4,23 +4,137 @@ use std::{collections::HashMap, fs::OpenOptions, io::Write};
 // --- 领域模型 ---
 
 // 罪状一：用一个“大而全”的枚举来区分设备，缺乏扩展性 (违反 OCP, LSP)
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum DeviceType {
-    SmartLight,
-    Thermostat,
-    SmartSpeaker,
+pub mod contracts {
+
+    pub trait Runnable {
+        fn open(&mut self) -> anyhow::Result<()>;
+        fn close(&mut self) -> anyhow::Result<()>;
+    }
+
+    pub trait Dimmable: Runnable {
+        fn set_light(&mut self, is_on: bool, brightness: Option<u8>) -> anyhow::Result<()>;
+    }
+
+    // 罪状四：高层模块直接依赖底层实现细节（网络、日志） (违反 DIP)
+
+    // ... 其他类似 set_thermostat_temp, play_speaker_music 等直接实现的方法 ...
+    pub trait TemperatureAdjustable: Runnable {
+        fn set_temperature(&mut self, _temp: f32) -> anyhow::Result<()>;
+    }
+
+    pub trait Speaker: Runnable {
+        fn play_speaker_music(&mut self, _id: &str, _playlist: &str) -> anyhow::Result<()>;
+        fn stop_speaker_music(&mut self, _id: &str) -> anyhow::Result<()>;
+    }
+    
+    pub trait Routiner {
+        fn run(&self) -> anyhow::Result<()>;
+    }
 }
 
-// 一个设备的所有可能状态都塞在一个结构体里 (违反 ISP)
-#[derive(Debug, Clone)]
-pub struct Device {
-    pub id: String,
-    pub device_type: DeviceType,
-    // --- 状态字段 ---
-    is_on: bool,
-    brightness: Option<u8>,   // 只有灯泡用
-    temperature: Option<f32>, // 只有恒温器用
-    volume: Option<u8>,       // 只有音箱用
+pub mod devices {
+    use crate::test4::contracts::{Dimmable, Runnable, Speaker, TemperatureAdjustable};
+    use std::fs::OpenOptions;
+    use std::io::Write;
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub enum DeviceType {
+        SmartLight,
+        Thermostat,
+        SmartSpeaker,
+    }
+
+    // 一个设备的所有可能状态都塞在一个结构体里 (违反 ISP)
+    #[derive(Debug, Clone)]
+    pub struct Device {
+        pub id: String,
+        pub device_type: DeviceType,
+        // --- 状态字段 ---
+        is_on: bool,
+    }
+
+    pub struct DeviceSmartLight {
+        pub device: Device,
+        pub brightness: Option<u8>, // 只有灯泡用
+    }
+
+    impl Runnable for DeviceSmartLight {
+        fn open(&mut self) -> anyhow::Result<()> {
+            todo!()
+        }
+        fn close(&mut self) -> anyhow::Result<()> {
+            todo!()
+        }
+    }
+
+    impl Dimmable for DeviceSmartLight {
+        fn set_light(&mut self, is_on: bool, brightness: Option<u8>) -> anyhow::Result<()> {
+            let state = if is_on { "on" } else { "off" };
+            let brightness_str =
+                brightness.map_or("".to_string(), |b| format!(", brightness: {}%", b));
+            let log_msg = format!(
+                "[CMD] Sending to light {}: state={}, {}\n",
+                self.device.id, state, brightness_str
+            );
+
+            // 模拟网络调用
+            println!("{}", log_msg.trim());
+
+            // 模拟将日志直接写入文件
+            let mut log_file = OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open("smart_home.log")?;
+            log_file.write_all(log_msg.as_bytes())?;
+            Ok(())
+        }
+    }
+
+    pub struct DeviceThermostat {
+        pub device: Device,
+        pub temperature: Option<f32>, // 只有恒温器用
+    }
+
+    impl Runnable for DeviceThermostat {
+        fn open(&mut self) -> anyhow::Result<()> {
+            todo!()
+        }
+        fn close(&mut self) -> anyhow::Result<()> {
+            todo!()
+        }
+    }
+
+    impl TemperatureAdjustable for DeviceThermostat {
+        fn set_temperature(&mut self, _temp: f32) -> anyhow::Result<()> {
+            /* ... */
+            Ok(())
+        }
+    }
+
+    pub struct DeviceSmartSpeaker {
+        pub device: Device,
+        pub volume: Option<u8>, // 只有音箱用
+    }
+
+    impl Runnable for DeviceSmartSpeaker {
+        fn open(&mut self) -> anyhow::Result<()> {
+            todo!()
+        }
+        fn close(&mut self) -> anyhow::Result<()> {
+            todo!()
+        }
+    }
+
+    impl Speaker for DeviceSmartSpeaker {
+        fn play_speaker_music(&mut self, _id: &str, _playlist: &str) -> anyhow::Result<()> {
+            /* ... */
+            Ok(())
+        }
+        fn stop_speaker_music(&mut self, _id: &str) -> anyhow::Result<()> {
+            /* ... */
+            Ok(())
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -82,41 +196,6 @@ impl SmartHomeController {
                 }
             }
         }
-        Ok(())
-    }
-
-    // 罪状四：高层模块直接依赖底层实现细节（网络、日志） (违反 DIP)
-    fn send_light_command(&self, id: &str, is_on: bool, brightness: Option<u8>) -> Result<()> {
-        let state = if is_on { "on" } else { "off" };
-        let brightness_str = brightness.map_or("".to_string(), |b| format!(", brightness: {}%", b));
-        let log_msg = format!(
-            "[CMD] Sending to light {}: state={}, {}\n",
-            id, state, brightness_str
-        );
-
-        // 模拟网络调用
-        println!("{}", log_msg.trim());
-
-        // 模拟将日志直接写入文件
-        let mut log_file = OpenOptions::new()
-            .append(true)
-            .create(true)
-            .open("smart_home.log")?;
-        log_file.write_all(log_msg.as_bytes())?;
-        Ok(())
-    }
-
-    // ... 其他类似 set_thermostat_temp, play_speaker_music 等直接实现的方法 ...
-    fn set_thermostat_temp(&self, _id: &str, _temp: f32) -> Result<()> {
-        /* ... */
-        Ok(())
-    }
-    fn play_speaker_music(&self, _id: &str, _playlist: &str) -> Result<()> {
-        /* ... */
-        Ok(())
-    }
-    fn stop_speaker_music(&self, _id: &str) -> Result<()> {
-        /* ... */
         Ok(())
     }
 }
