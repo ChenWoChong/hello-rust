@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 // --- 契约层 (Traits) ---
 pub trait Device: Send + Sync {
+    // 设备的基本能力
     fn id(&self) -> &str;
     fn as_any(&self) -> &dyn Any;
 
@@ -15,17 +16,25 @@ pub trait Device: Send + Sync {
         None
     }
 }
+
+// 可以开关
 pub trait Switchable {
     fn turn_on(&self) -> Result<()>;
     fn turn_off(&self) -> Result<()>;
 }
+
+// 可以调节亮度
 pub trait Dimmable {
     fn set_brightness(&self, b: u8) -> Result<()>;
 }
+
+// 一个场景基本的能力
 pub trait Routine {
     fn name(&self) -> &'static str;
     fn execute(&self, d: &DeviceCollection) -> Result<()>;
 }
+
+// 设备的集合，通过 name -> 设备能力的抽象
 type DeviceCollection = HashMap<String, Box<dyn Device>>;
 
 // --- 实现层 (Structs) ---
@@ -150,31 +159,39 @@ impl SmartHomeController {
     }
 }
 
-// --- 最终的“组装工厂” ---
-fn main() -> Result<()> {
-    // 1. 创建所有“零件”
-    let light1 = SmartLight {
-        id: "客厅灯".to_string(),
+#[cfg(test)]
+mod tests {
+    use crate::test4::test4_ans::SmartHomeController;
+    use crate::test4::test4_ans::{
+        DimmableLight, GoodMorningRoutine, MovieNightRoutine, SmartLight,
     };
-    let light2 = DimmableLight {
-        id: "卧室灯".to_string(),
-    };
-    let morning_routine = GoodMorningRoutine;
-    let movie_routine = MovieNightRoutine; // 新增的场景
 
-    // 2. 创建“中枢”
-    let mut controller = SmartHomeController::default();
+    #[test]
+    fn test4_should_work() -> anyhow::Result<()> {
+        // --- 最终的“组装工厂” ---
+        // 1. 创建所有“零件”
+        let light1 = SmartLight {
+            id: "客厅灯".to_string(),
+        };
+        let light2 = DimmableLight {
+            id: "卧室灯".to_string(),
+        };
+        let morning_routine = GoodMorningRoutine;
+        let movie_routine = MovieNightRoutine; // 新增的场景
 
-    // 3. 注册“零件”到中枢
-    controller.add_device(Box::new(light1));
-    controller.add_device(Box::new(light2));
-    controller.add_routine(Box::new(morning_routine));
-    controller.add_routine(Box::new(movie_routine));
+        // 2. 创建“中枢”
+        let mut controller = SmartHomeController::default();
 
-    // 4. 执行
-    controller.run_routine("早安模式")?;
-    println!();
-    controller.run_routine("电影之夜")?;
+        // 3. 注册“零件”到中枢
+        controller.add_device(Box::new(light1));
+        controller.add_device(Box::new(light2));
+        controller.add_routine(Box::new(morning_routine));
+        controller.add_routine(Box::new(movie_routine));
 
-    Ok(())
+        // 4. 执行
+        controller.run_routine("早安模式")?;
+        println!();
+        controller.run_routine("电影之夜")?;
+        Ok(())
+    }
 }

@@ -77,5 +77,7 @@ mod test_iter {
         assert_eq!(arr[0..=1], [1, 2]);
         assert_eq!(arr[0..=2], [1, 2, 3]);
         assert_ne!(arr[0..=2], [1, 2, 3, 4]);
+
+        println!("arr is : {:?}",arr);
     }
 }
