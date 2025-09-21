@@ -391,6 +391,9 @@ mod tests {
             .with_sink(&json_sink)
             .run()?;
 
+        fs::remove_file("users.csv")?;
+        fs::remove_file("active_users.json")?;
+
         Ok(())
     }
 }
