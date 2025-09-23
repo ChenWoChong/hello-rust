@@ -181,15 +181,53 @@ impl<Store> Clone for Service<Store> {
 
 pub struct ServiceInner<Store> {
     store: Store,
+    on_received: Vec<fn(&CommandRequest)>,
+    on_executed: Vec<fn(&CommandResponse)>,
+    on_before_send: Vec<fn(&mut CommandResponse)>,
+    on_after_send: Vec<fn()>,
 }
 
-impl<Store: Storage> Service<Store> {
+impl<Store: Storage> ServiceInner<Store> {
     pub fn new(st: Store) -> Self {
         Self {
-            inner: Arc::new(ServiceInner { store: st }),
+            store: st,
+            on_received: Vec::new(),
+            on_executed: Vec::new(),
+            on_before_send: Vec::new(),
+            on_after_send: Vec::new(),
         }
     }
 
+    pub fn fn_received(mut self, f: fn(&CommandRequest)) -> Self {
+        self.on_received.push(f);
+        self
+    }
+
+    pub fn fn_executed(mut self, f: fn(&CommandResponse)) -> Self {
+        self.on_executed.push(f);
+        self
+    }
+
+    pub fn fn_before_send(mut self, f: fn(&mut CommandResponse)) -> Self {
+        self.on_before_send.push(f);
+        self
+    }
+
+    pub fn fn_after_send(mut self, f: fn()) -> Self {
+        self.on_after_send.push(f);
+        self
+    }
+}
+
+impl<Store: Storage> From<ServiceInner<Store>> for Service<Store> {
+    fn from(inner: ServiceInner<Store>) -> Self {
+        Self {
+            inner: Arc::new(inner),
+        }
+    }
+}
+
+impl<Store: Storage> Service<Store> {
     pub fn execute(&self, cmd: CommandRequest) -> CommandResponse {
         debug!("Got request: {:?}", cmd);
         let res = dispatch(cmd, &self.inner.store);

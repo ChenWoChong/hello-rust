@@ -13,7 +13,7 @@ impl MemTable {
     }
 
     #[allow(dead_code)]
-    pub fn get_or_create_table(&self, name: &str) -> Ref<String, DashMap<String, Value>> {
+    pub fn get_or_create_table(&self, name: &str) -> Ref<'_, String, DashMap<String, Value>> {
         match self.tables.get(name) {
             Some(table) => table,
             None => {

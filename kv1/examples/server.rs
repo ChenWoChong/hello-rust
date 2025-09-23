@@ -8,7 +8,7 @@ use tokio_util::codec::{Decoder, Encoder, Framed}; // 核心工具
 use tracing::info;
 
 // 假设这是你的 protobuf 结构体
-use kv1::{CommandRequest, CommandResponse, MemTable, Service};
+use kv1::{CommandRequest, CommandResponse, MemTable, Service, ServiceInner};
 
 // --- 步骤 1: 创建你自己的编解码器 ---
 pub struct ProstCodec<In, Out> {
@@ -66,7 +66,7 @@ impl Encoder<CommandResponse> for ProstCodec<CommandRequest, CommandResponse> {
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
-    let service: Service = Service::new(MemTable::new());
+    let service: Service = ServiceInner::new(MemTable::new()).into();
 
     let addr = "127.0.0.1:9527";
     let listener = TcpListener::bind(addr).await?;
