@@ -1,4 +1,5 @@
 mod command_service;
+mod notify;
 
 use crate::*;
 pub use command_service::{Service, ServiceInner};
