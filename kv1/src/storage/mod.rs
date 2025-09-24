@@ -4,6 +4,7 @@ mod sleddb;
 use crate::{KvError, Kvpair, Value};
 #[allow(unused_imports)]
 pub use memory::MemTable;
+pub use sleddb::SledDb;
 
 pub trait Storage {
     fn get(&self, table: &str, key: &str) -> Result<Option<Value>, KvError>;
@@ -34,13 +35,13 @@ pub trait Storage {
 // pub struct Service {
 //     pub store: Arc<Box<dyn Storage>>,
 // }
-// 
+//
 // impl Service {
 //     pub fn new(s: Box<dyn Storage>) -> Self {
 //         Self { store: Arc::new(s) }
 //     }
 // }
-// 
+//
 // impl Clone for Service {
 //     fn clone(&self) -> Self {
 //         Self {
@@ -53,6 +54,8 @@ pub trait Storage {
 mod tests {
     use super::*;
     use crate::storage::memory::MemTable;
+    use crate::storage::sleddb::SledDb;
+    use tempfile::tempdir;
 
     #[test]
     fn mem_table_basic_interface_should_work() {
@@ -223,5 +226,26 @@ mod tests {
                 Kvpair::new("k5", "v5".into()),
             ]
         );
+    }
+
+    #[test]
+    fn sleddb_basic_interface_should_work() {
+        let dir = tempdir().unwrap();
+        let store = SledDb::new(dir);
+        test_basic_interface(store);
+    }
+
+    #[test]
+    fn sleddb_get_all_should_work() {
+        let dir = tempdir().unwrap();
+        let store = SledDb::new(dir);
+        test_get_all(store);
+    }
+
+    #[test]
+    fn sleddb_iter_should_work() {
+        let dir = tempdir().unwrap();
+        let store = SledDb::new(dir);
+        test_get_iter(store);
     }
 }

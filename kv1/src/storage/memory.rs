@@ -114,7 +114,7 @@ pub struct StorageIter<T> {
 }
 
 impl<T> StorageIter<T> {
-    fn new(data: T) -> Self {
+    pub(crate) fn new(data: T) -> Self {
         Self { data }
     }
 }

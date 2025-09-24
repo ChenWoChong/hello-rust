@@ -1,6 +1,6 @@
+use crate::storage::memory::StorageIter;
 use crate::{KvError, Kvpair, Storage, Value};
 use sled::{Db, Error, IVec};
-use std::fmt::format;
 use std::path::Path;
 
 #[derive(Debug)]
@@ -20,6 +20,7 @@ impl SledDb {
     }
 }
 
+#[allow(dead_code)]
 fn flip<T, E>(x: Option<Result<T, E>>) -> Result<Option<T>, E> {
     x.map_or(Ok(None), |v| v.map(Some))
 }
@@ -27,11 +28,11 @@ fn flip<T, E>(x: Option<Result<T, E>>) -> Result<Option<T>, E> {
 impl Storage for SledDb {
     fn get(&self, table: &str, key: &str) -> Result<Option<Value>, KvError> {
         let name = SledDb::get_full_key(table, key);
-        let result = self.0.get(name.as_bytes()).map(|v| v.as_ref().try_into());
+        let result = self.0.get(name.as_bytes())?.map(|v| v.as_ref().try_into());
         flip(result)
     }
 
-    fn mget<T, K>(&self, table: &str, keys: T) -> Result<Vec<Kvpair>, KvError>
+    fn mget<T, K>(&self, _table: &str, _keys: T) -> Result<Vec<Kvpair>, KvError>
     where
         K: Into<String>,
         T: IntoIterator<Item = K>,
@@ -40,22 +41,28 @@ impl Storage for SledDb {
     }
 
     fn set(&self, table: &str, key: String, value: Value) -> Result<Option<Value>, KvError> {
-        todo!()
+        let name = SledDb::get_full_key(table, &key);
+        let data: Vec<u8> = value.try_into()?;
+        let result = self.0.insert(name, data)?.map(|v| v.as_ref().try_into());
+        flip(result)
     }
 
-    fn mset(&self, table: &str, items: Vec<Kvpair>) -> Result<bool, KvError> {
+    fn mset(&self, _table: &str, _items: Vec<Kvpair>) -> Result<bool, KvError> {
         todo!()
     }
 
     fn contains(&self, table: &str, key: &str) -> Result<bool, KvError> {
-        todo!()
+        let name = SledDb::get_full_key(table, key);
+        Ok(self.0.contains_key(name)?)
     }
 
     fn del(&self, table: &str, key: &str) -> Result<Option<Value>, KvError> {
-        todo!()
+        let name = SledDb::get_full_key(table, key);
+        let result = self.0.remove(name)?.map(|v| v.as_ref().try_into());
+        flip(result)
     }
 
-    fn mdel<T, K>(&self, table: &str, keys: T) -> Result<bool, KvError>
+    fn mdel<T, K>(&self, _table: &str, _keys: T) -> Result<bool, KvError>
     where
         K: Into<String>,
         T: IntoIterator<Item = K>,
@@ -64,37 +71,29 @@ impl Storage for SledDb {
     }
 
     fn get_all(&self, table: &str) -> Result<Vec<Kvpair>, KvError> {
-        todo!()
+        let prefix = SledDb::get_table_prefix(table);
+        let result = self.0.scan_prefix(prefix).map(|v| v.into()).collect();
+        Ok(result)
     }
 
     fn get_iter(&self, table: &str) -> Result<Box<dyn Iterator<Item = Kvpair>>, KvError> {
-        todo!()
+        let prefix = SledDb::get_table_prefix(table);
+        let iter = StorageIter::new(self.0.scan_prefix(prefix));
+        Ok(Box::new(iter))
     }
 }
 
-impl From<Result<Option<IVec>, sled::Error>> for Kvpair {
-    fn from(value:Result<Option<IVec>, sled::Error>) -> Self {
+impl From<Result<(IVec, IVec), Error>> for Kvpair {
+    fn from(value: Result<(IVec, IVec), Error>) -> Self {
         match value {
-            Ok(v) => match v {
-                Some(v) => Kvpair::new(ivec_to_key(v.as_ref())),
-                None => Kvpair::default(),
+            Ok((k, v)) => match v.as_ref().try_into() {
+                Ok(v) => Kvpair::new(ivec_to_key(k.as_ref()), v),
+                Err(_) => Kvpair::default(),
             },
             _ => Kvpair::default(),
         }
     }
 }
-
-// impl From<Result<(IVec, IVec), sled::Error>> for Kvpair {
-//     fn from(value: Result<(IVec, IVec), Error>) -> Self {
-//         match value {
-//             Ok((k, v)) => match v.as_ref().try_into() {
-//                 Ok(v) => Kvpair::new(ivec_to_key(k.as_ref()), v),
-//                 Err(_) => Kvpair::default(),
-//             },
-//             _ => Kvpair::default(),
-//         }
-//     }
-// }
 
 fn ivec_to_key(ivec: &[u8]) -> &str {
     let s = str::from_utf8(ivec).unwrap();
