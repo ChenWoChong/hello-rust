@@ -1,4 +1,5 @@
 mod memory;
+mod sleddb;
 
 use crate::{KvError, Kvpair, Value};
 #[allow(unused_imports)]
