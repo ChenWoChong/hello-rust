@@ -2,6 +2,7 @@ mod leetcode;
 mod lc_352;
 mod lc_80;
 mod lc_88;
+mod lc_27;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
