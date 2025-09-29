@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = ["app", "generic", "httpie", "kv1", "leetcode", "queryer", "rgrep", "scrape_url", "shared", "solid", "thumbor"]
+members = ["app", "ffi", "generic", "httpie", "kv1", "leetcode", "queryer", "rgrep", "scrape_url", "shared", "solid", "thumbor"]
