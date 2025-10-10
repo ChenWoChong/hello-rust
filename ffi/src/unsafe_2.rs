@@ -63,16 +63,16 @@ mod tests {
     //     println!("r1: {}, r2: {}", *r1, *r2);
     // }
 
-    #[test]
-    fn test_change_raw_pointer() {
-        let r1 = 0xdeadbeef as *mut u32;
-        println!("so far so good!");
-
-        unsafe {
-            *r1 += 1;
-            println!("r1: {}", *r1);
-        }
-    }
+    // #[test]
+    // fn test_change_raw_pointer() {
+    //     let r1 = 0xdeadbeef as *mut u32;
+    //     println!("so far so good!");
+    //
+    //     unsafe {
+    //         *r1 += 1;
+    //         println!("r1: {}", *r1);
+    //     }
+    // }
 
     // #[test]
     // fn test_call_libc_malloc() {
@@ -102,8 +102,10 @@ mod tests {
     }
 }
 
+#[allow(dead_code)]
 static mut COUNTER: usize = 1;
 
+#[allow(dead_code)]
 pub struct MyAllocator;
 
 unsafe impl GlobalAlloc for MyAllocator {
@@ -123,11 +125,11 @@ unsafe impl GlobalAlloc for MyAllocator {
     }
 }
 
-#[global_allocator]
-static GLOBAL: MyAllocator = MyAllocator;
+// #[global_allocator]
+// static GLOBAL: MyAllocator = MyAllocator;
 
 #[allow(dead_code)]
-pub fn from_utf8(v: &[u8]) -> Result<&'_ str, Utf8Chunk> {
+pub fn from_utf8(v: &[u8]) -> Result<&str, Utf8Chunk<'_>> {
     Ok(unsafe { from_utf8_unchecked(v) })
 }
 
